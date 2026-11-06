@@ -35,6 +35,7 @@ preserved byte for byte; AgentBase only owns a marked block. After upgrading the
 
 ```text
 agentbase roles | skills            list canonical roles / skills
+agentbase uninstall [--dry-run] [--purge]   remove managed files/blocks; --purge also deletes .agentbase state
 agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bounded file retrieval with size estimates
 agentbase explain [--write]        evidence-based structural map (no model calls)
@@ -42,6 +43,25 @@ agentbase tasks ...                validate / schedule / transition a task DAG
 agentbase memory ...               evidence-backed notes, sync, handoff
 agentbase local ...                opt-in loopback Ollama proposals (never mutates files)
 ```
+
+## Example session
+
+```bash
+agentbase init --provider both --dry-run   # preview, writes nothing
+agentbase init --provider both
+agentbase doctor                           # offline diagnostics
+agentbase tasks import --file examples/tasks.example.json
+agentbase tasks ready                      # which tasks may start now (launches nothing)
+agentbase tasks transition api-design ready
+agentbase tasks transition api-design running
+agentbase tasks transition api-design review --evidence "contract reviewed"
+agentbase tasks transition api-design completed --evidence "docs/health-contract.md accepted"
+agentbase memory handoff                   # compact, evidence-backed handoff
+agentbase uninstall --dry-run              # preview a clean removal
+```
+
+`tasks.example.json` is validated by the test suite, so it always matches the schema.
+At the end of every task the host agent reports which role/agent did what (or why none was used).
 
 ## Roles and skills
 

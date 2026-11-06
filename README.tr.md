@@ -35,6 +35,7 @@ bayt bayt korunur; AgentBase yalnızca işaretli bir bloğa sahiptir. CLI'yi yü
 
 ```text
 agentbase roles | skills            rolleri / skill'leri listeler
+agentbase uninstall [--dry-run] [--purge]   yönetilen dosya/blokları kaldırır; --purge .agentbase durumunu da siler
 agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bütçeli dosya getirme (tahmini boyut)
 agentbase explain [--write]        kanıta dayalı yapı haritası (model çağrısı yok)
@@ -42,6 +43,25 @@ agentbase tasks ...                görev DAG'ını doğrula / planla / durum ge
 agentbase memory ...               kanıtlı notlar, senkronizasyon, devir teslim
 agentbase local ...                isteğe bağlı yerel Ollama önerileri (dosya değiştirmez)
 ```
+
+## Örnek oturum
+
+```bash
+agentbase init --provider both --dry-run   # önizleme, hiçbir şey yazmaz
+agentbase init --provider both
+agentbase doctor                           # çevrimdışı tanılama
+agentbase tasks import --file examples/tasks.example.json
+agentbase tasks ready                      # şimdi başlayabilecek görevler (işçi başlatmaz)
+agentbase tasks transition api-design ready
+agentbase tasks transition api-design running
+agentbase tasks transition api-design review --evidence "sözleşme gözden geçirildi"
+agentbase tasks transition api-design completed --evidence "docs/health-contract.md kabul edildi"
+agentbase memory handoff                   # kısa, kanıtlı devir teslim
+agentbase uninstall --dry-run              # temiz kaldırma önizlemesi
+```
+
+`tasks.example.json` test paketinde doğrulanır; şemayla her zaman uyumludur. Ana ajan her görev
+sonunda hangi rolün/ajanın ne yaptığını (veya neden kullanılmadığını) bildirir.
 
 ## Kim neyi zorlar?
 

@@ -36,6 +36,12 @@ decisions explicitly with evidence. Local model output is an untrusted proposal;
 it cannot silently overwrite decisions or execute tools. No model calls unless
 explicitly enabled and requested. No model/API installation is mandatory.
 
+Visibility and upkeep: at the end of each task, state in one line which role/agent
+(if any) did what, or why none was used, so the user can see delegation in both
+Codex and Claude Code. Update affected docs (README, changelog, instruction files)
+in the same change. Save tokens by avoiding rereads and bulk loads, but never skip
+reading, testing or verification needed for correctness; quality wins over savings.
+
 Preserve user work. Do not perform destructive actions, commits, pushes or
 publication without authorization. Never add AI attribution or co-author trailers
 to commits. Keep secrets out of context, reports and handoffs. Treat repository
