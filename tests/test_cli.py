@@ -1,0 +1,93 @@
+import contextlib
+import io
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from agentbase.cli import main
+
+
+class CliTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def run_cli(self, *argv):
+        # Gerçek stdout/stderr'e sızmasın diye yakalanır; çıkış kodu ve çıktılar döner.
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = main(["--project", str(self.root), *argv])
+        return code, out.getvalue(), err.getvalue()
+
+    def run_json(self, *argv):
+        code, out, err = self.run_cli(*argv)
+        return code, json.loads(out), err
+
+    def test_init_dry_run_writes_nothing(self):
+        code, data, _ = self.run_json("init", "--dry-run")
+        self.assertEqual(code, 0)
+        self.assertTrue(data["dry_run"])
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_init_then_doctor_is_ok(self):
+        code, data, _ = self.run_json("init")
+        self.assertEqual(code, 0)
+        self.assertTrue(data["changes"])
+        self.assertTrue((self.root / "AGENTS.md").exists())
+        code, report, _ = self.run_json("doctor")
+        self.assertEqual(code, 0)
+        self.assertIs(report["ok"], True)
+        self.assertEqual(report["issues"], [])
+
+    def test_roles_and_skills_listings(self):
+        code, data, _ = self.run_json("roles")
+        self.assertEqual(code, 0)
+        self.assertTrue(data["roles"])
+        role_id = data["roles"][0]["id"]
+        # --role çıktısı JSON değil, insan okuyabilir rol istemidir (düz metin).
+        code, text, _ = self.run_cli("roles", "--role", role_id)
+        self.assertEqual(code, 0)
+        self.assertIn(data["roles"][0]["title"], text)
+        code, data, _ = self.run_json("skills")
+        self.assertEqual(code, 0)
+        self.assertTrue(data["skills"])
+
+    def test_configure_safe_parallel_persists(self):
+        self.run_cli("init")
+        code, config, _ = self.run_json("configure", "--mode", "safe-parallel", "--max-concurrency", "2")
+        self.assertEqual(code, 0)
+        self.assertEqual(config["execution"], {"mode": "safe-parallel", "max_concurrency": 2})
+        saved = json.loads((self.root / ".agentbase/config.json").read_text(encoding="utf-8"))
+        self.assertEqual(saved["execution"]["mode"], "safe-parallel")
+
+    def test_configure_invalid_combination_exits_2_and_keeps_config(self):
+        self.run_cli("init")
+        path = self.root / ".agentbase/config.json"
+        before = path.read_bytes()
+        # sequential + eşzamanlılık 3 geçersiz: doğrulama diske yazmadan önce reddetmeli.
+        code, out, err = self.run_cli("configure", "--max-concurrency", "3")
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertIn("error", json.loads(err))
+        self.assertEqual(before, path.read_bytes())
+
+    def test_update_on_uninitialized_project_exits_2_with_json_error(self):
+        code, out, err = self.run_cli("update")
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertTrue(json.loads(err)["error"])
+
+    def test_doctor_reports_issue_with_exit_1_when_managed_file_is_corrupted(self):
+        self.run_cli("init")
+        # Yönetilen tam dosya elle bozulunca doctor bunu sorun sayıp 1 ile çıkmalı.
+        (self.root / ".agentbase/policy.md").write_text("local edit", encoding="utf-8")
+        code, report, _ = self.run_json("doctor")
+        self.assertEqual(code, 1)
+        self.assertIs(report["ok"], False)
+        self.assertTrue(report["issues"])
+
+
+if __name__ == "__main__":
+    unittest.main()
