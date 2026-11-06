@@ -14,7 +14,7 @@ from .config import DEFAULT, limits, load_config, validate_config
 from .context import retrieve
 from .explain import project_report, report_changes
 from .fs import AgentBaseError, batch_write, confined, json_text, project_lock, read_json
-from .install import install, load_manifest, prepare
+from .install import install, load_manifest, prepare, uninstall
 
 
 def parser() -> argparse.ArgumentParser:
@@ -27,6 +27,9 @@ def parser() -> argparse.ArgumentParser:
     init.add_argument("--dry-run", action="store_true")
     update = commands.add_parser("update", help="Regenerate managed files after upgrading the CLI")
     update.add_argument("--dry-run", action="store_true")
+    remove = commands.add_parser("uninstall", help="Remove AgentBase-managed files and blocks; user content is preserved")
+    remove.add_argument("--dry-run", action="store_true")
+    remove.add_argument("--purge", action="store_true", help="Also delete .agentbase state (config, tasks, memory, reports)")
     commands.add_parser("doctor", help="Offline configuration, ownership and installation diagnostics")
     configure = commands.add_parser("configure", help="Change validated context/execution settings")
     configure.add_argument("--profile", choices=("minimal", "balanced", "deep"))
@@ -107,6 +110,8 @@ def run(args: argparse.Namespace) -> dict | str:
         return install(root, providers=providers, dry_run=args.dry_run)
     if args.command == "update":
         return install(root, update=True, dry_run=args.dry_run)
+    if args.command == "uninstall":
+        return uninstall(root, purge=args.purge, dry_run=args.dry_run)
     if args.command == "doctor":
         return doctor(root)
     if args.command == "roles":
