@@ -1,0 +1,36 @@
+---
+name: agentbase-plan-tasks
+description: Plan substantial coordinated changes as a validated dependency DAG with explicit file ownership.
+---
+
+For small work, implement directly. Otherwise read `.agentbase/policy.md` and
+`.agentbase/config.json`. The primary host session remains the Orchestrator.
+
+Prepare JSON with `schema_version: 1` and `tasks`. Each task needs `id`,
+`description`, `role` (an AgentBase role ID), `dependencies` (IDs), `inputs`,
+`outputs`, `scope` (`[{"path":"src/service.py","access":"write"}]`),
+`resources` (`[{"name":"test-db","access":"write"}]`, or empty),
+`acceptance` (checkable criteria), `status: "pending"`, `verification: []`,
+and `blocking_reason: ""`. Inputs, outputs and acceptance are nonempty string
+lists. Directory scopes include descendants; `.` covers the project. No globs.
+Use narrow scopes. Give shared mutable environments resource claims. Unknown
+runtime effects require exclusive write claims.
+
+Separate contracts from implementation when useful. Do not invent dependencies.
+Run `agentbase tasks validate --file plan.json`, then the Orchestrator imports it
+using `agentbase tasks import --file plan.json`. Import refuses to replace
+existing nonempty work. `agentbase tasks sync` promotes eligible pending tasks;
+`agentbase tasks ready` proposes a deterministic compatible batch, without
+launching workers. Claim each task via `agentbase tasks transition ID running`.
+
+Use native specialists if available, otherwise apply the appropriate canonical
+role in `.agentbase/roles/` sequentially. Do not use recursive delegation. Respect
+configured concurrency and actual host permission/runtime limits. This release
+allows parallel readers only, with writers serialized against all other work.
+
+Workers return task ID, result, changed files, decisions, checks/results,
+failures, risks and downstream artifacts. The Orchestrator records `review`,
+verifies acceptance, then `completed --evidence "observed check/result"`.
+Use `blocked --reason "..."` for missing inputs; investigate before retrying via
+`pending`. Never complete another task by implication. CLI claims are advisory
+to the host; they do not intercept filesystem writes or spawn agents.

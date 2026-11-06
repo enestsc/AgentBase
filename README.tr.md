@@ -1,0 +1,58 @@
+# AgentBase
+
+**OpenAI Codex** ve **Claude Code** için sağlayıcıya özgü (native) yapay zekâ geliştirme iş akışları.
+Tek kaynaklı roller, skill'ler ve politika; üretilen native adaptörler; deterministik koordinasyon
+için bağımlılıksız küçük bir Python CLI. İngilizce: [README.md](README.md).
+
+AgentBase bir çıkarım (inference) çerçevesi değildir; mevcut ajan çalışma zamanlarını kullanır.
+
+## Kurulum
+
+Python 3.11+ gerekir. Çalışma zamanı bağımlılığı yoktur.
+
+```bash
+pip install git+https://github.com/enestsc/AgentBase.git
+cd projeniz
+agentbase init --provider both      # codex | claude | both
+agentbase doctor
+```
+
+`init --dry-run` tüm değişiklikleri önceden gösterir. Mevcut `AGENTS.md` / `CLAUDE.md` içeriği
+bayt bayt korunur; AgentBase yalnızca işaretli bir bloğa sahiptir. CLI'yi yükselttikten sonra
+`agentbase update` çalıştırın; yerel olarak düzenlenmiş yönetilen dosyalar ezilmez.
+
+## Kurulan dosyalar
+
+| Yol | Amaç |
+|---|---|
+| `AGENTS.md`, `CLAUDE.md` (işaretli blok) | Ortak talimatlar |
+| `.codex/agents/agentbase-*.toml` | Codex özel ajanları |
+| `.claude/agents/agentbase-*.md` | Claude Code alt ajanları |
+| `.agents/skills/…`, `.claude/skills/…` | Kademeli yüklenen skill'ler |
+| `.agentbase/` | Politika, roller, ayarlar, görev DAG'ı, bellek, manifest |
+
+## Komutlar
+
+```text
+agentbase roles | skills            rolleri / skill'leri listeler
+agentbase configure --mode sequential|safe-parallel
+agentbase context ...              bütçeli dosya getirme (tahmini boyut)
+agentbase explain [--write]        kanıta dayalı yapı haritası (model çağrısı yok)
+agentbase tasks ...                görev DAG'ını doğrula / planla / durum geçişi
+agentbase memory ...               kanıtlı notlar, senkronizasyon, devir teslim
+agentbase local ...                isteğe bağlı yerel Ollama önerileri (dosya değiştirmez)
+```
+
+## Kim neyi zorlar?
+
+1. **AgentBase aracı (deterministik):** DAG doğrulama, geçiş kuralları, dosya sahiplik çakışmaları,
+   yol kısıtlama, hash takipli dosyalar, atomik yazma, bağlam bütçeleri.
+2. **Ana ajan politikası (yalnızca talimat):** ne zaman devredileceği, kapsam disiplini, otomatik
+   commit/yapay zekâ imzası yok.
+3. **Sağlayıcı çalışma zamanı:** gerçek alt ajan yürütme, sandbox ve izinler. AgentBase bunları
+   kontrol ettiğini iddia etmez.
+
+Varsayılan yürütme sıralıdır (eşzamanlılık 1). `safe-parallel` isteğe bağlıdır; yalnızca uyumlu
+okuyucuları paralel çalıştırır, yazıcılar sıraya alınır.
+
+Lisans: MIT.
