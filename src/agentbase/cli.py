@@ -8,8 +8,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from . import __version__
-from . import local, memory, tasks
+from . import __version__, local, memory, tasks
 from .catalog import role_prompt, roles, skills
 from .config import DEFAULT, limits, load_config, validate_config
 from .context import retrieve

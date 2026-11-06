@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .config import limits, load_config
@@ -57,7 +57,7 @@ def note(root: Path, category: str, text: str, evidence: str) -> dict:
         if error or line < 1 or line > len(source.splitlines()):
             raise AgentBaseError("Evidence needs a readable, allowed source file and existing line.")
         current = notes(root)
-        stamp = datetime.now(timezone.utc).date().isoformat()
+        stamp = datetime.now(UTC).date().isoformat()
         entry = f"\n- {stamp}: {text.strip()} (evidence: `{name}:{line}`, sha256 `{digest(source)[:12]}`)\n"
         body = current.get(category, f"# {category.capitalize()}\n") + entry
         if sum(map(len, current.values())) - len(current.get(category, "")) + len(body) > limits(config)["memory_max_chars"]:
