@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Docs
+- `ROADMAP.md`: tamamlanan aşamalar ve kalan işlerin güncel durumu.
+
 ### Fixed
 - `local`: `http://127.0.0.1:0` artık sessizce 11434'e düşmüyor, reddediliyor; HTTP hata yanıtı kapatılıyor (ResourceWarning).
 
