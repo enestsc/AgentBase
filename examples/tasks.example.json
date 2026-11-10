@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "api-design",
+      "description": "Yeni /health ucunun sözleşmesini (istek/yanıt) tasarla",
+      "role": "architect",
+      "dependencies": [],
+      "inputs": ["README.md"],
+      "outputs": ["docs/health-contract.md (öneri; yazan Orchestrator)"],
+      "scope": [{"path": "src", "access": "read"}],
+      "resources": [],
+      "acceptance": ["Sözleşme istek, yanıt ve hata durumlarını tanımlar"],
+      "status": "pending",
+      "verification": [],
+      "blocking_reason": ""
+    },
+    {
+      "id": "api-impl",
+      "description": "Sözleşmeye göre /health ucunu uygula",
+      "role": "backend-engineer",
+      "dependencies": ["api-design"],
+      "inputs": ["docs/health-contract.md"],
+      "outputs": ["src/api/health.py"],
+      "scope": [{"path": "src/api", "access": "write"}],
+      "resources": [],
+      "acceptance": ["Uç sözleşmedeki yanıtı döner"],
+      "status": "pending",
+      "verification": [],
+      "blocking_reason": ""
+    },
+    {
+      "id": "api-tests",
+      "description": "/health için testleri yaz ve çalıştır",
+      "role": "qa-test-engineer",
+      "dependencies": ["api-impl"],
+      "inputs": ["src/api/health.py"],
+      "outputs": ["tests/test_health.py"],
+      "scope": [{"path": "tests", "access": "write"}],
+      "resources": [],
+      "acceptance": ["Testler geçer"],
+      "status": "pending",
+      "verification": [],
+      "blocking_reason": ""
+    }
+  ]
+}

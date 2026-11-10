@@ -125,6 +125,79 @@ def prepare(root: Path, *, update: bool, providers: list[str] | None = None) -> 
     return changes
 
 
+def prepare_uninstall(root: Path, *, purge: bool) -> dict[str, str | None]:
+    """Yalnızca manifestteki yönetilen öğeleri geri alır; kullanıcı içeriğine dokunmaz."""
+    if not confined(root, MANIFEST).exists():
+        raise AgentBaseError("Not initialized; nothing to uninstall.")
+    old = load_manifest(root)["files"]
+    changes: dict[str, str | None] = {}
+    for name, record in old.items():
+        content = text_at(root, name)
+        if content is None:
+            continue  # Zaten yok; geri alınacak bir şey kalmadı.
+        if record["kind"] == "file":
+            # Yerel düzenlenmiş yönetilen dosya silinirse kullanıcı emeği kaybolur; update ile aynı koruma.
+            if digest(content.replace("\r\n", "\n")) != record["sha256"]:
+                raise AgentBaseError(f"Local managed edit detected: {name}. Preserve/move the edit before uninstalling.")
+            changes[name] = None
+            continue
+        parts = block_parts(content)
+        if not parts:
+            continue
+        before, block, after = parts
+        if digest(block.replace("\r\n", "\n")) != record["sha256"]:
+            raise AgentBaseError(f"Local managed edit detected: {name}. Preserve/move the edit before uninstalling.")
+        # install() boş dosyada "blok\n", dolu dosyada "\n\nblok\n" ekler; bunu birebir geri al.
+        if before == "" and after.strip() == "":
+            changes[name] = None  # Dosyayı AgentBase yaratmıştı ve başka içerik yok.
+        elif before.endswith("\n\n") and after == "\n":
+            changes[name] = before[:-2]
+        else:
+            changes[name] = before + after
+    if purge:
+        base = confined(root, ".agentbase")
+        if base.is_dir():
+            for path in sorted(base.rglob("*")):
+                if path.is_symlink():
+                    raise AgentBaseError(f"Refusing linked project path: {path.name}")
+                if path.is_file() and path.name != "write.lock":
+                    changes[path.relative_to(root).as_posix()] = None
+    else:
+        # Durum (config/tasks/memory) korunur; boş manifest sonraki `update` ile yeniden kurulumu mümkün kılar.
+        changes[MANIFEST] = json_text({"schema_version": 1, "version": __version__, "files": {}})
+    return changes
+
+
+def uninstall(root: Path, *, purge: bool = False, dry_run: bool = False) -> dict:
+    root = root.resolve()
+    if not root.is_dir():
+        raise AgentBaseError("Project directory must already exist.")
+    if dry_run:
+        changes = prepare_uninstall(root, purge=purge)
+    else:
+        with project_lock(root):
+            changes = prepare_uninstall(root, purge=purge)
+            batch_write(root, changes)
+            # Boşalan dizinleri temizle (yalnızca boş olanlar; rmdir doluysa hata verir, biz yutarız).
+            for name in sorted((n for n, b in changes.items() if b is None), reverse=True):
+                parent = confined(root, name).parent
+                while parent != root and parent.is_dir():
+                    try:
+                        parent.rmdir()
+                    except OSError:
+                        break
+                    parent = parent.parent
+        if purge:
+            # write.lock kilidin içinde silinemediği için .agentbase en son, kilit kalkınca kaldırılır.
+            try:
+                confined(root, ".agentbase").rmdir()
+            except OSError:
+                pass
+    return {"dry_run": dry_run, "purge": purge,
+            "changes": [{"path": name, "action": "remove" if body is None else "write"}
+                        for name, body in changes.items()]}
+
+
 def install(root: Path, *, update: bool = False, providers: list[str] | None = None,
             dry_run: bool = False) -> dict:
     root = root.resolve()

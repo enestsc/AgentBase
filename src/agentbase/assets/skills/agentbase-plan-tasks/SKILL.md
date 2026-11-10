@@ -1,6 +1,6 @@
 ---
 name: agentbase-plan-tasks
-description: Plan substantial coordinated changes as a validated dependency DAG with explicit file ownership.
+description: Use when dependent components or justified specialists require a coordinated plan; skip task DAGs for small direct changes.
 ---
 
 For small work, implement directly. Otherwise read `.agentbase/policy.md` and
@@ -28,9 +28,17 @@ role in `.agentbase/roles/` sequentially. Do not use recursive delegation. Respe
 configured concurrency and actual host permission/runtime limits. This release
 allows parallel readers only, with writers serialized against all other work.
 
-Workers return task ID, result, changed files, decisions, checks/results,
-failures, risks and downstream artifacts. The Orchestrator records `review`,
-verifies acceptance, then `completed --evidence "observed check/result"`.
+Workers return schema-v1 JSON with `schema_version: 1`, `task_id`, `result`,
+`changed_files`, `decisions`, `tests`, `failures`, `risks` and `artifacts`.
+Use arrays for all fields except version, task_id and result; each tests item
+has `command`, `status` (`passed`, `failed`, `not-run`) and `outcome`.
+Keep empty arrays explicit. Changed files must fit the task's write scopes;
+read-only roles return proposals with changed_files empty. List checks not run
+with a reason. The Orchestrator runs `agentbase tasks validate-handoff --file handoff.json`,
+then `agentbase tasks transition ID review --handoff-file handoff.json`, verifies
+acceptance, and records `completed --evidence "observed check/result"`.
+Completion needs a passed observation and no unresolved failures; validation
+does not execute checks. Rework via running or a retry discards the old handoff.
 Use `blocked --reason "..."` for missing inputs; investigate before retrying via
 `pending`. Never complete another task by implication. CLI claims are advisory
 to the host; they do not intercept filesystem writes or spawn agents.

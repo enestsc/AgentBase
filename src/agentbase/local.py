@@ -28,7 +28,8 @@ def endpoint_url(endpoint: str) -> str:
         if (url.scheme != "http" or not host or not ipaddress.ip_address(host).is_loopback or
                 url.username or url.password or url.query or url.fragment or url.path not in ("", "/")):
             raise ValueError
-        port = url.port or 11434
+        # `or` port 0'ı sessizce 11434'e çevirirdi; yalnızca port hiç verilmediğinde varsayılan kullan.
+        port = 11434 if url.port is None else url.port
         if not 1 <= port <= 65535:
             raise ValueError
     except ValueError as exc:
@@ -80,6 +81,7 @@ def request(url: str, payload: dict, timeout: int) -> dict:
                 "usage": {k: result[k] for k in ("prompt_eval_count", "eval_count") if k in result},
                 "files_changed": []}
     except HTTPError as exc:
+        exc.close()  # Açık kalan yanıt gövdesi ResourceWarning üretiyordu.
         raise AgentBaseError(f"Ollama HTTP {exc.code}; no provider fallback attempted.") from exc
     except (URLError, TimeoutError, OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise AgentBaseError("Local model unavailable or invalid response; no provider fallback attempted.") from exc

@@ -23,6 +23,19 @@ classifiers = [
 ]
 dependencies = []
 
+[project.optional-dependencies]
+# Yalnızca geliştirme içindir; çalışma zamanı bağımlılığı sıfır kalmalı.
+dev = ["ruff>=0.6", "pytest>=8"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# Mevcut kod tabanı uzun satırlı yazılmış; satır uzunluğu için ayrı bir temizlik işi açılmadan zorlanmaz.
+ignore = ["E501"]
+
 [project.urls]
 Repository = "https://github.com/enestsc/AgentBase"
 Issues = "https://github.com/enestsc/AgentBase/issues"

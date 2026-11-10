@@ -33,17 +33,66 @@ bayt bayt korunur; AgentBase yalnızca işaretli bir bloğa sahiptir. CLI'yi yü
 
 ## Komutlar
 
+Proje üzerinde `explain`, `context`, `memory` ve `tasks` için önce `agentbase init`
+gerekir; eksikse anlaşılır hata verilir. `tasks validate --file` bağımsız çalışır.
+
 ```text
 agentbase roles | skills            rolleri / skill'leri listeler
+agentbase uninstall [--dry-run] [--purge]   yönetilen dosya/blokları kaldırır; --purge .agentbase durumunu da siler
 agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bütçeli dosya getirme (tahmini boyut)
 agentbase explain [--write]        kanıta dayalı yapı haritası (model çağrısı yok)
 agentbase tasks ...                görev DAG'ını doğrula / planla / durum geçişi
+agentbase tasks validate-handoff --file handoff.json   devir alanlarını ve yazma kapsamını doğrula
 agentbase memory ...               kanıtlı notlar, senkronizasyon, devir teslim
+agentbase memory list              kimlikleri ve düzenleme çakışmalarını gösterir
+agentbase memory prune --id ID --reason "çözüldü" --dry-run
+agentbase memory supersede --id ID --reason "değişti" --text "yeni not" --evidence src/app.py:1 --dry-run
 agentbase local ...                isteğe bağlı yerel Ollama önerileri (dosya değiştirmez)
 ```
 
+## Örnek oturum
+
+```bash
+agentbase init --provider both --dry-run   # önizleme, hiçbir şey yazmaz
+agentbase init --provider both
+agentbase doctor                           # çevrimdışı tanılama
+agentbase tasks import --file examples/tasks.example.json
+agentbase tasks ready                      # şimdi başlayabilecek görevler (işçi başlatmaz)
+agentbase tasks transition api-design ready
+agentbase tasks transition api-design running
+agentbase tasks validate-handoff --file handoff.json  # gerçek gözlemlerle hazırla; examples/handoff.example.json
+agentbase tasks transition api-design review --handoff-file handoff.json
+agentbase tasks transition api-design completed --evidence "docs/health-contract.md kabul edildi"
+agentbase memory handoff                   # kısa, kanıtlı devir teslim
+agentbase uninstall --dry-run              # temiz kaldırma önizlemesi
+```
+
+`tasks.example.json` test paketinde doğrulanır; şemayla her zaman uyumludur. Ana ajan her görev
+sonunda hangi rolün/ajanın ne yaptığını (veya neden kullanılmadığını) bildirir.
+
+Bellek bakımı yalnızca açıkça seçilen, değiştirilmemiş kimlikli notları işler; eski metni
+ve kanıtını arşivler. Önizlemeyi inceledikten sonra `--dry-run` kaldırılır. Elle yazılmış
+ve kimliksiz eski notlar korunur. Arşivler aktif bellek bütçesine girmez, diskte kalır.
+Kanıt indeksi yeni not veya bakım yazımında v2'ye yükselir.
+
+`handoff.json`, [örnekten](examples/handoff.example.json) gerçek gözlemlerle hazırlanır.
+[Devir şeması](docs/handoffs.md): review için devir; tamamlanma için başarılı gözlem,
+çözülmemiş hata olmaması ve verification kanıtı gerekir. Araç kimlik/alan/kapsam/bütçeyi
+doğrular, kontrolleri çalıştırmaz. Yeniden çalışma eski devri geçersiz kılar;
+devirsiz eski completed görevler okunur ama uyarıyla gösterilir.
+
 ## Kim neyi zorlar?
+
+Roller sağlayıcıya göre model/efor önerisi içerir: basit okuyucular Luna/Haiku +
+low, mimar/güvenlik Sol/Opus + high. [Alanlar ve kaynaklar](docs/provider-models.md).
+[Prompt denetimi ve önerilen diff](docs/prompt-audit.md), sahiplik/salt okuma
+sınırlarını ve yedi skill'in tetikleyici düzeltmelerini açıklar; gerçek model oturumu denenmedi.
+
+Katalog artık 10 skill içerir. Yeni `agentbase-prepare-release`, `agentbase-changelog`
+ve `agentbase-pr-summary`, sürüm hazırlığı, değişiklik notu ve PR taslağı üretir;
+uzak yayınlama için yetki gerekir. Mevcut projede önce `agentbase update --dry-run`,
+incelemeden sonra `agentbase update` çalıştırılır.
 
 1. **AgentBase aracı (deterministik):** DAG doğrulama, geçiş kuralları, dosya sahiplik çakışmaları,
    yol kısıtlama, hash takipli dosyalar, atomik yazma, bağlam bütçeleri.

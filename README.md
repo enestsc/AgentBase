@@ -33,21 +33,67 @@ preserved byte for byte; AgentBase only owns a marked block. After upgrading the
 
 ## Commands
 
+Project `explain`, `context`, `memory` and `tasks` commands require `agentbase init`
+first and report an actionable error otherwise. `tasks validate --file` works independently.
+
 ```text
 agentbase roles | skills            list canonical roles / skills
+agentbase uninstall [--dry-run] [--purge]   remove managed files/blocks; --purge also deletes .agentbase state
 agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bounded file retrieval with size estimates
 agentbase explain [--write]        evidence-based structural map (no model calls)
 agentbase tasks ...                validate / schedule / transition a task DAG
+agentbase tasks validate-handoff --file handoff.json   validate worker result fields and write scope
 agentbase memory ...               evidence-backed notes, sync, handoff
+agentbase memory list              show tracked note IDs and edit conflicts
+agentbase memory prune --id ID --reason "resolved" --dry-run
+agentbase memory supersede --id ID --reason "changed" --text "replacement" --evidence src/app.py:1 --dry-run
 agentbase local ...                opt-in loopback Ollama proposals (never mutates files)
 ```
 
+## Example session
+
+```bash
+agentbase init --provider both --dry-run   # preview, writes nothing
+agentbase init --provider both
+agentbase doctor                           # offline diagnostics
+agentbase tasks import --file examples/tasks.example.json
+agentbase tasks ready                      # which tasks may start now (launches nothing)
+agentbase tasks transition api-design ready
+agentbase tasks transition api-design running
+agentbase tasks validate-handoff --file handoff.json  # prepare with actual observations; see examples/handoff.example.json
+agentbase tasks transition api-design review --handoff-file handoff.json
+agentbase tasks transition api-design completed --evidence "docs/health-contract.md accepted"
+agentbase memory handoff                   # compact, evidence-backed handoff
+agentbase uninstall --dry-run              # preview a clean removal
+```
+
+`tasks.example.json` is validated by the test suite, so it always matches the schema.
+Prepare `handoff.json` from the [handoff example](examples/handoff.example.json) using
+real observations before review/completion. [Required fields and compatibility](docs/handoffs.md):
+validation checks the task ID, fields, write scope and budget; it does not execute checks.
+Review requires a handoff; completion requires a passed observation, no unresolved
+failures and verification evidence. Rework/retry invalidates the previous handoff.
+Memory maintenance archives explicitly selected intact notes and their evidence before
+removing/replacing active entries. Omit `--dry-run` after reviewing the preview.
+Manual notes and legacy notes without IDs are preserved; archives are outside the active
+memory budget and remain on disk. The evidence index upgrades to v2 on a new note or maintenance write.
+At the end of every task the host agent reports which role/agent did what (or why none was used).
+
 ## Roles and skills
+
+Roles include provider-specific model/effort recommendations. Simple readers use
+Luna/Haiku at low effort; architecture/security use Sol/Opus at high effort.
+See [verified fields, sources and runtime limits](docs/provider-models.md).
+The [prompt audit and proposed diff](docs/prompt-audit.md) document ownership,
+read-only checks and skill-trigger corrections; model-session behavior remains untested.
 
 Sixteen roles in four tiers (planning, implementation, quality, knowledge) are defined once in
 `src/agentbase/assets/roles.json` and rendered per provider. Skills: explain-project,
-architecture-map, plan-tasks, verify-change, sync-memory, session-handoff, local-assist.
+architecture-map, plan-tasks, verify-change, sync-memory, session-handoff, local-assist,
+prepare-release, changelog and pr-summary (10 total). Delivery skills prepare reviewable
+artifacts; remote publication requires authorization. Existing projects gain new skills via
+`agentbase update --dry-run`, then `agentbase update` after review.
 
 ## Who enforces what
 

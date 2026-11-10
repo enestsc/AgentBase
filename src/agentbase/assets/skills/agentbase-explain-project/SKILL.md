@@ -1,6 +1,6 @@
 ---
 name: agentbase-explain-project
-description: Explain an unfamiliar repository and walk through its implemented features using source evidence.
+description: Use when a repository explanation or implemented-feature walkthrough is requested; keep scope to the question and load architecture-map only for needed diagrams.
 ---
 
 Start with the user's question and audience. Read concise memory if available.

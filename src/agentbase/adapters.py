@@ -16,6 +16,7 @@ def render(providers: list[str]) -> dict[str, str]:
             result[f".codex/agents/{name}.toml"] = "\n".join(
                 f"{key} = {json.dumps(value, ensure_ascii=False)}" for key, value in {
                     "name": name, "description": role["trigger"],
+                    **role["model_recommendations"]["codex"],
                     "developer_instructions": body,
                 }.items()) + "\n"
         if "claude" in providers:
@@ -23,7 +24,9 @@ def render(providers: list[str]) -> dict[str, str]:
                      "Read, Grep, Glob, Edit, Write, Bash, PowerShell")
             result[f".claude/agents/{name}.md"] = (
                 f"---\nname: {name}\ndescription: {json.dumps(role['trigger'])}\n"
-                f"tools: {tools}\nmodel: inherit\n---\n\n{body}"
+                f"tools: {tools}\n"
+                + "".join(f"{key}: {value}\n" for key, value in role["model_recommendations"]["claude"].items())
+                + f"---\n\n{body}"
             )
     for name, body in skills().items():
         if "codex" in providers:

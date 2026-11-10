@@ -47,6 +47,25 @@ class InstallTests(unittest.TestCase):
         self.assertTrue(path.read_text().startswith("User prefix\n"))
         self.assertTrue(path.read_text().endswith("User suffix\n"))
 
+    def test_upgrade_discovers_new_delivery_skills_and_preserves_user_work(self):
+        new = {"agentbase-prepare-release", "agentbase-changelog", "agentbase-pr-summary"}
+        old = {name: body for name, body in skills().items() if name not in new}
+        with patch("agentbase.adapters.skills", return_value=old):
+            install(self.root)
+        memory = self.root / ".agentbase/memory/overview.md"
+        memory.write_bytes(b"User knowledge\r\n")
+        preview = install(self.root, update=True, dry_run=True)
+        for name in new:
+            for prefix in (".agents", ".claude"):
+                path = f"{prefix}/skills/{name}/SKILL.md"
+                self.assertIn(path, [change["path"] for change in preview["changes"]])
+                self.assertFalse((self.root / path).exists())
+        install(self.root, update=True)
+        for name in new:
+            self.assertEqual((self.root / f".agents/skills/{name}/SKILL.md").read_text(encoding="utf-8"), skills()[name])
+        self.assertEqual(memory.read_bytes(), b"User knowledge\r\n")
+        self.assertEqual(install(self.root, update=True)["changes"], [])
+
     def test_full_file_conflict_prevents_all_updates(self):
         install(self.root)
         path = self.root / ".agentbase/policy.md"
@@ -97,10 +116,26 @@ class InstallTests(unittest.TestCase):
             name = "agentbase-" + role["id"]
             native = tomllib.loads(generated[f".codex/agents/{name}.toml"])
             self.assertEqual(native["name"], name)
+            self.assertEqual(native["model"], role["model_recommendations"]["codex"]["model"])
+            self.assertEqual(native["model_reasoning_effort"],
+                             role["model_recommendations"]["codex"]["model_reasoning_effort"])
             self.assertEqual(native["developer_instructions"], generated[f".agentbase/roles/{role['id']}.md"])
             claude = generated[f".claude/agents/{name}.md"]
             self.assertTrue(claude.endswith(native["developer_instructions"]))
+            for key, value in role["model_recommendations"]["claude"].items():
+                self.assertIn(f"\n{key}: {value}\n", claude)
             self.assertNotIn("tools: Agent", claude)
+
+    def test_model_recommendations_match_role_complexity(self):
+        generated = render(["codex", "claude"])
+        for role in roles():
+            codex, claude = (role["model_recommendations"][key] for key in ("codex", "claude"))
+            if role["id"] in {"architect", "security-reviewer"}:
+                self.assertEqual((codex["model"], codex["model_reasoning_effort"]), ("gpt-6.1-sol", "high"))
+                self.assertEqual(claude, {"model": "opus", "effort": "high"})
+            elif role["access"] == "read":
+                self.assertEqual((codex["model"], codex["model_reasoning_effort"]), ("gpt-6-luna", "low"))
+                self.assertEqual(claude, {"model": "haiku", "effort": "low"})
         for name, content in skills().items():
             self.assertTrue(content.startswith(f"---\nname: {name}\ndescription: "))
             self.assertEqual(content, generated[f".agents/skills/{name}/SKILL.md"])

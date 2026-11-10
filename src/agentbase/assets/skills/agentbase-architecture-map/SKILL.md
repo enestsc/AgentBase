@@ -1,6 +1,6 @@
 ---
 name: agentbase-architecture-map
-description: Create evidence-backed component and feature-flow diagrams, or check existing architecture maps for drift.
+description: Use when a component diagram, feature-flow diagram or stale-map review is requested; use explain-project for a prose walkthrough.
 ---
 
 Use `agentbase explain` as a starting inventory. Read actual imports, interfaces,

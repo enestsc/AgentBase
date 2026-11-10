@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "api-design",
+  "result": "Örnek devir: gerçek sözleşme önerisi ve gözlenen sonuçlarla değiştirin.",
+  "changed_files": [],
+  "decisions": [],
+  "tests": [
+    {
+      "command": "Sözleşmeyi görevin kabul kriterleriyle karşılaştır",
+      "status": "not-run",
+      "outcome": "Bu yalnızca şema örneğidir; gerçek inceleme çalıştırılmadı."
+    }
+  ],
+  "failures": [],
+  "risks": ["Örnek, görevi tamamlamak için gereken gözlenmiş başarılı kontrolü içermez."],
+  "artifacts": []
+}

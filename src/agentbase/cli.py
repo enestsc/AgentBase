@@ -8,14 +8,13 @@ import sys
 import tomllib
 from pathlib import Path
 
-from . import __version__
-from . import local, memory, tasks
+from . import __version__, local, memory, tasks
 from .catalog import role_prompt, roles, skills
 from .config import DEFAULT, limits, load_config, validate_config
 from .context import retrieve
 from .explain import project_report, report_changes
 from .fs import AgentBaseError, batch_write, confined, json_text, project_lock, read_json
-from .install import install, load_manifest, prepare
+from .install import install, load_manifest, prepare, uninstall
 
 
 def parser() -> argparse.ArgumentParser:
@@ -28,6 +27,9 @@ def parser() -> argparse.ArgumentParser:
     init.add_argument("--dry-run", action="store_true")
     update = commands.add_parser("update", help="Regenerate managed files after upgrading the CLI")
     update.add_argument("--dry-run", action="store_true")
+    remove = commands.add_parser("uninstall", help="Remove AgentBase-managed files and blocks; user content is preserved")
+    remove.add_argument("--dry-run", action="store_true")
+    remove.add_argument("--purge", action="store_true", help="Also delete .agentbase state (config, tasks, memory, reports)")
     commands.add_parser("doctor", help="Offline configuration, ownership and installation diagnostics")
     configure = commands.add_parser("configure", help="Change validated context/execution settings")
     configure.add_argument("--profile", choices=("minimal", "balanced", "deep"))
@@ -47,11 +49,14 @@ def parser() -> argparse.ArgumentParser:
         sub.add_argument("--file", required=name == "import", type=Path)
     for name in ("show", "ready", "sync"):
         tc.add_parser(name)
+    hv = tc.add_parser("validate-handoff", help="Validate a worker handoff against its current task scope")
+    hv.add_argument("--file", required=True, type=Path)
     trans = tc.add_parser("transition")
     trans.add_argument("id")
     trans.add_argument("status", choices=list(tasks.TRANSITIONS))
     trans.add_argument("--evidence", action="append")
     trans.add_argument("--reason", default="")
+    trans.add_argument("--handoff-file", type=Path)
     mem = commands.add_parser("memory", help="Evidence-backed notes, state synchronization and handoff")
     mc = mem.add_subparsers(dest="memory_command", required=True)
     note = mc.add_parser("note")
@@ -61,6 +66,15 @@ def parser() -> argparse.ArgumentParser:
     ms = mc.add_parser("sync")
     ms.add_argument("--deep", action="store_true")
     mc.add_parser("handoff")
+    mc.add_parser("list", help="List tracked note IDs; manual and legacy notes are preserved")
+    for name in ("prune", "supersede"):
+        sub = mc.add_parser(name)
+        sub.add_argument("--id", required=True, action="append" if name == "prune" else "store")
+        sub.add_argument("--reason", required=True)
+        sub.add_argument("--dry-run", action="store_true")
+        if name == "supersede":
+            sub.add_argument("--text", required=True)
+            sub.add_argument("--evidence", required=True)
     loc = commands.add_parser("local", help="Explicit opt-in loopback Ollama proposal; no file mutations")
     loc.add_argument("action", choices=("summarize", "classify"))
     loc.add_argument("--input", required=True)
@@ -79,7 +93,10 @@ def doctor(root: Path) -> dict:
     except AgentBaseError as exc:
         issues.append(str(exc))
     try:
-        tasks.load_plan(root)
+        plan = tasks.load_plan(root)
+        legacy = [t["id"] for t in plan["tasks"] if t["status"] == "completed" and "handoff" not in t]
+        if legacy:
+            warnings.append("Legacy completed tasks lack validated handoffs: " + ", ".join(legacy))
     except AgentBaseError as exc:
         issues.append(str(exc))
     for name, record in manifest["files"].items():
@@ -103,11 +120,18 @@ def doctor(root: Path) -> dict:
 
 def run(args: argparse.Namespace) -> dict | str:
     root = args.project.resolve()
+    # Harici plan doğrulaması bağımsızdır; proje işlemleri önce kurulum ister.
+    standalone_plan = args.command == "tasks" and args.task_command == "validate" and args.file
+    if args.command in {"explain", "context", "memory", "tasks"} and not standalone_plan:
+        if not confined(root, ".agentbase/config.json").is_file():
+            raise AgentBaseError("Project is not initialized; first run `agentbase init` (önce `agentbase init` çalıştır).")
     if args.command == "init":
         providers = ["codex", "claude"] if args.provider == "both" else [args.provider]
         return install(root, providers=providers, dry_run=args.dry_run)
     if args.command == "update":
         return install(root, update=True, dry_run=args.dry_run)
+    if args.command == "uninstall":
+        return uninstall(root, purge=args.purge, dry_run=args.dry_run)
     if args.command == "doctor":
         return doctor(root)
     if args.command == "roles":
@@ -129,16 +153,25 @@ def run(args: argparse.Namespace) -> dict | str:
             batch_write(root, {".agentbase/config.json": json_text(config)})
         return config
     if args.command == "tasks":
+        if args.task_command == "validate-handoff":
+            value = read_json(args.file)
+            target = next((t for t in tasks.load_plan(root)["tasks"] if t["id"] == value.get("task_id")), None)
+            if target is None:
+                raise AgentBaseError("Unknown handoff task_id.")
+            tasks.validate_handoff(value, target, load_config(root))
+            return {"valid": True, "task_id": target["id"], "checks_executed": False}
         if args.task_command == "validate":
             config = load_config(root) if confined(root, ".agentbase/config.json").exists() else DEFAULT
             plan = tasks.validate_plan(read_json(args.file), config) if args.file else tasks.load_plan(root)
-            return {"valid": True, "tasks": len(plan["tasks"])}
+            return {"valid": True, "tasks": len(plan["tasks"]), "legacy_completed_without_handoff":
+                    [t["id"] for t in plan["tasks"] if t["status"] == "completed" and "handoff" not in t]}
         if args.task_command == "import":
             return tasks.import_plan(root, read_json(args.file))
         if args.task_command == "sync":
             return tasks.sync(root)
         if args.task_command == "transition":
-            return tasks.transition(root, args.id, args.status, evidence=args.evidence, reason=args.reason)
+            return tasks.transition(root, args.id, args.status, evidence=args.evidence, reason=args.reason,
+                                    handoff=read_json(args.handoff_file) if args.handoff_file else None)
         plan = tasks.load_plan(root)
         return {"ready": tasks.schedule(plan, load_config(root)), "launches_workers": False} if args.task_command == "ready" else plan
     if args.command == "context":
@@ -151,6 +184,13 @@ def run(args: argparse.Namespace) -> dict | str:
             return {"written": ".agentbase/reports/project.md"}
         return project_report(root, load_config(root))[0]
     if args.command == "memory":
+        if args.memory_command == "list":
+            return memory.list_notes(root)
+        if args.memory_command in {"prune", "supersede"}:
+            replace = args.memory_command == "supersede"
+            return memory.maintain(root, [args.id] if replace else args.id, args.reason,
+                                   text=args.text if replace else None,
+                                   evidence=args.evidence if replace else None, dry_run=args.dry_run)
         if args.memory_command == "sync":
             return memory.sync_memory(root, deep=args.deep)
         if args.memory_command == "note":

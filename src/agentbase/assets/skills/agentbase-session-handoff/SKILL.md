@@ -1,9 +1,10 @@
 ---
 name: agentbase-session-handoff
-description: Prepare a concise, evidence-backed guide for resuming development in a later session.
+description: Use when pausing, resuming or transferring a session requires a concise resume guide; this does not complete tasks or replace worker verification.
 ---
 
 Run `agentbase memory handoff` to collect bounded memory and current task state.
+This is a session resume guide; recorded task evidence does not prove checks ran.
 Review the relevant source and recent verified handoffs. Explain what the project
 does, what works and how it was checked, recent changes, incomplete work,
 important code locations and the next files to read. State unknowns explicitly.

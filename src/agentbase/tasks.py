@@ -8,7 +8,7 @@ from itertools import combinations
 from pathlib import Path
 
 from .catalog import roles
-from .config import limits, load_config
+from .config import DEFAULT, limits, load_config
 from .fs import AgentBaseError, batch_write, confined, json_text, project_lock, read_json, relative
 
 PLAN = ".agentbase/tasks.json"
@@ -21,6 +21,8 @@ TRANSITIONS = {
 }
 TASK_FIELDS = {"id", "description", "role", "dependencies", "inputs", "outputs", "scope",
                "resources", "acceptance", "status", "verification", "blocking_reason"}
+HANDOFF_FIELDS = {"schema_version", "task_id", "result", "changed_files", "decisions",
+                  "tests", "failures", "risks", "artifacts"}
 
 
 def string_list(value: object, label: str, *, nonempty: bool = False) -> None:
@@ -54,6 +56,39 @@ def compatible(a: dict, b: dict) -> bool:
     return not conflicts(a, b) and not is_writer(a) and not is_writer(b)
 
 
+def validate_handoff(value: dict, task: dict, config: dict | None = None, *, completed: bool = False) -> dict:
+    if not isinstance(value, dict) or set(value) != HANDOFF_FIELDS or type(value["schema_version"]) is not int or value["schema_version"] != 1:
+        raise AgentBaseError("Handoff requires schema_version 1 and fields: " + ", ".join(sorted(HANDOFF_FIELDS)))
+    if value["task_id"] != task["id"]:
+        raise AgentBaseError("Handoff task_id does not match the target task.")
+    if not isinstance(value["result"], str) or not value["result"].strip():
+        raise AgentBaseError("Handoff result must describe the observed outcome.")
+    for field in ("changed_files", "decisions", "failures", "risks", "artifacts"):
+        string_list(value[field], "handoff." + field)
+    seen = set()
+    for name in value["changed_files"]:
+        name = relative(name).casefold()
+        if name in seen:
+            raise AgentBaseError("Duplicate changed file in handoff.")
+        seen.add(name)
+        if not any(access == "write" and (scope == "." or name == scope or name.startswith(scope + "/"))
+                   for kind, scope, access in claims(task) if kind == "file"):
+            raise AgentBaseError("Handoff changed file is outside the task's write scope.")
+    if not isinstance(value["tests"], list) or not value["tests"]:
+        raise AgentBaseError("Handoff tests must include observations or explicit not-run checks.")
+    for check in value["tests"]:
+        if (not isinstance(check, dict) or set(check) != {"command", "status", "outcome"}
+                or not isinstance(check["status"], str) or check["status"] not in {"passed", "failed", "not-run"}
+                or any(not isinstance(check[key], str) or not check[key].strip() for key in ("command", "outcome"))):
+            raise AgentBaseError("Each handoff test needs command, status (passed/failed/not-run), and observed outcome or reason.")
+    if completed and (value["failures"] or any(check["status"] == "failed" for check in value["tests"])
+                      or not any(check["status"] == "passed" for check in value["tests"])):
+        raise AgentBaseError("Completion handoff needs an observed passed check and no unresolved failures.")
+    if len(json_text(value)) > limits(config or DEFAULT)["max_handoff_chars"]:
+        raise AgentBaseError("Handoff exceeds the configured character budget; reference concise artifacts.")
+    return deepcopy(value)
+
+
 def validate_plan(value: dict, config: dict | None = None) -> dict:
     if set(value) != {"schema_version", "tasks"} or value.get("schema_version") != 1 or not isinstance(value["tasks"], list):
         raise AgentBaseError("Task plan requires schema_version 1 and tasks array.")
@@ -63,7 +98,7 @@ def validate_plan(value: dict, config: dict | None = None) -> dict:
     role_map = {r["id"]: r for r in roles()}
     by_id = {}
     for task in tasks:
-        if not isinstance(task, dict) or set(task) != TASK_FIELDS:
+        if not isinstance(task, dict) or set(task) not in (TASK_FIELDS, TASK_FIELDS | {"handoff"}):
             raise AgentBaseError(f"Each task needs exactly these fields: {', '.join(sorted(TASK_FIELDS))}")
         task_id = task["id"]
         if not isinstance(task_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", task_id):
@@ -102,6 +137,10 @@ def validate_plan(value: dict, config: dict | None = None) -> dict:
                 seen.add(name.casefold())
         if role_map[task["role"]]["access"] == "read" and is_writer(task):
             raise AgentBaseError(f"{task_id}: read-only role cannot own write claims.")
+        if "handoff" in task:
+            if task["status"] not in {"review", "completed"}:
+                raise AgentBaseError("Stored handoffs belong only to review/completed tasks.")
+            validate_handoff(task["handoff"], task, config, completed=task["status"] == "completed")
     for task in tasks:
         if any(dep not in by_id for dep in task["dependencies"]):
             raise AgentBaseError(f"{task['id']}: dependency does not exist.")
@@ -177,7 +216,7 @@ def sync(root: Path) -> dict:
 
 
 def transition(root: Path, task_id: str, status: str, *, evidence: list[str] | None = None,
-               reason: str = "") -> dict:
+               reason: str = "", handoff: dict | None = None) -> dict:
     with project_lock(root):
         config = load_config(root)
         plan = load_plan(root)
@@ -187,6 +226,19 @@ def transition(root: Path, task_id: str, status: str, *, evidence: list[str] | N
         task = by_id[task_id]
         if status not in TRANSITIONS[task["status"]]:
             raise AgentBaseError(f"Invalid transition: {task['status']} -> {status}; use tasks sync to promote pending tasks.")
+        if handoff is not None:
+            if status not in {"review", "completed"}:
+                raise AgentBaseError("Supply a handoff only for review/completed transitions.")
+            task["handoff"] = validate_handoff(handoff, task, config, completed=status == "completed")
+        if status in {"review", "completed"}:
+            if "handoff" not in task:
+                raise AgentBaseError("Review/completion requires a validated handoff; supply --handoff-file FILE.")
+            validate_handoff(task["handoff"], task, config, completed=status == "completed")
+        else:
+            # Yeniden çalışma eski devirle tamamlanamasın; yeni gözlem kaydedilmelidir.
+            task.pop("handoff", None)
+        if status == "running" and task["status"] == "review":
+            task["verification"] = []
         if evidence:
             if sum(map(len, evidence)) > limits(config)["max_handoff_chars"]:
                 raise AgentBaseError("Evidence exceeds the handoff budget; reference an artifact instead.")
