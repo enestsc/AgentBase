@@ -21,7 +21,7 @@ bağımlılık kurulmadı. Katalog/üretim/yükseltme kontrolleri unittest ile y
 
 | # | İş | Durum | Not |
 |---|---|---|---|
-| 1 | Dalı GitHub'a gönderip PR aç | ⏳ Kullanıcı onayı bekliyor | Yerel işler ayrı commit'lerde; push/PR yapılmadı; Linux/macOS CI çalışması doğrulanmadı |
+| 1 | Dalı GitHub'a gönderip PR aç | ✅ Tamamlandı | Kullanıcı onayıyla dal gönderildi; [PR #1](https://github.com/enestsc/AgentBase/pull/1) açıldı (hedef main); birleştirme kullanıcıda; Linux/macOS CI sonucu henüz doğrulanmadı |
 | 2 | PyPI trusted publisher tanımla, `v*` etiketi at | ⏳ Bekliyor | Hesap işlemi kullanıcıda; tanımlanana kadar publish işi çalışmaz |
 | 3 | Başlatılmamış projede anlaşılır hata | ✅ Tamamlandı | Dört komut grubunda init yönlendirmesi ve yan etkisizlik testi; harici plan doğrulaması bağımsız |
 | 4 | Symlink testini Linux/macOS CI'da doğrula | ⏳ CI'a bağlı | Windows'ta atlanıyor |
