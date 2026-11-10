@@ -68,6 +68,9 @@ sonunda hangi rolün/ajanın ne yaptığını (veya neden kullanılmadığını)
 
 ## Kim neyi zorlar?
 
+Roller sağlayıcıya göre model/efor önerisi içerir: basit okuyucular Luna/Haiku +
+low, mimar/güvenlik Sol/Opus + high. [Alanlar ve kaynaklar](docs/provider-models.md).
+
 1. **AgentBase aracı (deterministik):** DAG doğrulama, geçiş kuralları, dosya sahiplik çakışmaları,
    yol kısıtlama, hash takipli dosyalar, atomik yazma, bağlam bütçeleri.
 2. **Ana ajan politikası (yalnızca talimat):** ne zaman devredileceği, kapsam disiplini, otomatik

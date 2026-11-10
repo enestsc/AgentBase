@@ -68,6 +68,10 @@ At the end of every task the host agent reports which role/agent did what (or wh
 
 ## Roles and skills
 
+Roles include provider-specific model/effort recommendations. Simple readers use
+Luna/Haiku at low effort; architecture/security use Sol/Opus at high effort.
+See [verified fields, sources and runtime limits](docs/provider-models.md).
+
 Sixteen roles in four tiers (planning, implementation, quality, knowledge) are defined once in
 `src/agentbase/assets/roles.json` and rendered per provider. Skills: explain-project,
 architecture-map, plan-tasks, verify-change, sync-memory, session-handoff, local-assist.

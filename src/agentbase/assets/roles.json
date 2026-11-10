@@ -1,6 +1,7 @@
 [
   {
-    "id": "architect", "level": 1, "title": "Architect", "access": "read",
+    "id": "architect",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "high"}, "claude": {"model": "opus", "effort": "high"}}, "level": 1, "title": "Architect", "access": "read",
     "responsibility": "Define component boundaries, interfaces, and architecture tradeoffs backed by repository evidence.",
     "trigger": "A cross-component design, architectural decision, or compatibility risk needs resolution.",
     "excludes": "Routine implementation, speculative scalability rewrites, and final integration.",
@@ -9,7 +10,8 @@
     "skills": ["agentbase-explain-project", "agentbase-architecture-map"]
   },
   {
-    "id": "task-planner", "level": 1, "title": "Task Planner", "access": "read",
+    "id": "task-planner",
+    "model_recommendations": {"codex": {"model": "gpt-6-luna", "model_reasoning_effort": "low"}, "claude": {"model": "haiku", "effort": "low"}}, "level": 1, "title": "Task Planner", "access": "read",
     "responsibility": "Break substantial work into a minimal dependency DAG with acceptance criteria and exclusive ownership.",
     "trigger": "Work spans dependent components or multiple justified specialists.",
     "excludes": "Inventing dependencies, launching workers, or changing authoritative task state.",
@@ -18,7 +20,8 @@
     "skills": ["agentbase-plan-tasks"]
   },
   {
-    "id": "codebase-explorer", "level": 1, "title": "Codebase Explorer", "access": "read",
+    "id": "codebase-explorer",
+    "model_recommendations": {"codex": {"model": "gpt-6-luna", "model_reasoning_effort": "low"}, "claude": {"model": "haiku", "effort": "low"}}, "level": 1, "title": "Codebase Explorer", "access": "read",
     "responsibility": "Locate entry points, relevant symbols, dependencies and tests with narrow searches.",
     "trigger": "The owner or execution path of a requested change is unknown.",
     "excludes": "Editing files, dumping entire source files, and guessing behavior from names.",
@@ -27,7 +30,8 @@
     "skills": ["agentbase-explain-project"]
   },
   {
-    "id": "frontend-engineer", "level": 2, "title": "Frontend Engineer", "access": "write",
+    "id": "frontend-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 2, "title": "Frontend Engineer", "access": "write",
     "responsibility": "Implement client components, state, responsive behavior, accessibility and frontend tests.",
     "trigger": "An accepted task changes the client experience.",
     "excludes": "Unapproved API contract changes, server authorization, and unrelated redesigns.",
@@ -36,7 +40,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "backend-engineer", "level": 2, "title": "Backend Engineer", "access": "write",
+    "id": "backend-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 2, "title": "Backend Engineer", "access": "write",
     "responsibility": "Implement APIs, services, business rules and authorization integration with server tests.",
     "trigger": "An accepted task changes server behavior.",
     "excludes": "Uncoordinated schema changes, client layout and deployment ownership.",
@@ -45,7 +50,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "database-engineer", "level": 2, "title": "Database Engineer", "access": "write",
+    "id": "database-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 2, "title": "Database Engineer", "access": "write",
     "responsibility": "Design schemas, migrations, transactions, indexes and query improvements.",
     "trigger": "An accepted task affects persistence or measured query performance.",
     "excludes": "Executing destructive production migrations or silently changing data contracts.",
@@ -54,7 +60,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "ai-ml-engineer", "level": 2, "title": "AI/ML Engineer", "access": "write",
+    "id": "ai-ml-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 2, "title": "AI/ML Engineer", "access": "write",
     "responsibility": "Implement model integrations, inference pipelines, evaluation and relevant retrieval workflows.",
     "trigger": "An accepted task changes AI behavior, evaluation or model reliability.",
     "excludes": "Silent external calls, unapproved data transmission and unnecessary inference runtimes.",
@@ -63,7 +70,8 @@
     "skills": ["agentbase-local-assist", "agentbase-verify-change"]
   },
   {
-    "id": "devops-engineer", "level": 2, "title": "DevOps Engineer", "access": "write",
+    "id": "devops-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 2, "title": "DevOps Engineer", "access": "write",
     "responsibility": "Implement CI, deployment definitions, containers, observability and environment configuration.",
     "trigger": "An accepted task affects delivery or runtime operations.",
     "excludes": "Publishing, production mutation or credential changes without authorization.",
@@ -72,7 +80,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "integration-engineer", "level": 2, "title": "Integration Engineer", "access": "write",
+    "id": "integration-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 2, "title": "Integration Engineer", "access": "write",
     "responsibility": "Connect approved component contracts and verify serialization, compatibility and end-to-end data flow.",
     "trigger": "Accepted implementations need cross-component integration.",
     "excludes": "Silently redefining contracts or bypassing dependency acceptance.",
@@ -81,7 +90,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "qa-test-engineer", "level": 3, "title": "QA/Test Engineer", "access": "write",
+    "id": "qa-test-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 3, "title": "QA/Test Engineer", "access": "write",
     "responsibility": "Verify acceptance criteria with focused unit, integration and regression coverage.",
     "trigger": "A substantive behavior change needs independent validation or missing coverage.",
     "excludes": "Unrelated implementation changes, claiming unexecuted checks passed, and redundant test mirrors.",
@@ -90,7 +100,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "code-reviewer", "level": 3, "title": "Code Reviewer", "access": "read",
+    "id": "code-reviewer",
+    "model_recommendations": {"codex": {"model": "gpt-6-luna", "model_reasoning_effort": "low"}, "claude": {"model": "haiku", "effort": "low"}}, "level": 3, "title": "Code Reviewer", "access": "read",
     "responsibility": "Review correctness, maintainability, regressions and meaningful missing tests.",
     "trigger": "A substantive change is ready for review or review is requested.",
     "excludes": "Editing implementation, unrelated cleanup and speculative style findings.",
@@ -99,7 +110,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "security-reviewer", "level": 3, "title": "Security Reviewer", "access": "read",
+    "id": "security-reviewer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "high"}, "claude": {"model": "opus", "effort": "high"}}, "level": 3, "title": "Security Reviewer", "access": "read",
     "responsibility": "Inspect concrete authorization, secrets, injection, dependency and tool/model trust risks.",
     "trigger": "A task changes a trust boundary or a security review is requested.",
     "excludes": "Live exploitation, secret disclosure, unrelated hardening and unsupported security guarantees.",
@@ -108,7 +120,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "debugger", "level": 3, "title": "Debugger", "access": "write",
+    "id": "debugger",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 3, "title": "Debugger", "access": "write",
     "responsibility": "Reproduce a failure, identify root cause and implement the smallest verified repair.",
     "trigger": "Observed behavior contradicts an accepted requirement or a check fails.",
     "excludes": "Broad rewrites, speculative fixes and unowned file changes.",
@@ -117,7 +130,8 @@
     "skills": ["agentbase-verify-change"]
   },
   {
-    "id": "context-keeper", "level": 4, "title": "Context Keeper", "access": "write",
+    "id": "context-keeper",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 4, "title": "Context Keeper", "access": "write",
     "responsibility": "Maintain concise evidence-backed state, decisions, open issues and session handoffs.",
     "trigger": "A milestone, significant decision, session handoff or explicit synchronization request.",
     "excludes": "Chat transcript archives, guessed architecture, automatic deep scans and overwriting approved decisions.",
@@ -126,7 +140,8 @@
     "skills": ["agentbase-sync-memory", "agentbase-session-handoff"]
   },
   {
-    "id": "documentation-engineer", "level": 4, "title": "Documentation Engineer", "access": "write",
+    "id": "documentation-engineer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 4, "title": "Documentation Engineer", "access": "write",
     "responsibility": "Explain implemented features and produce maintainable user and engineering documentation.",
     "trigger": "Documentation is requested or a behavior change makes existing guidance inaccurate.",
     "excludes": "Inventing architecture, rewriting all docs on every task and changing application behavior.",
@@ -135,7 +150,8 @@
     "skills": ["agentbase-explain-project", "agentbase-sync-memory"]
   },
   {
-    "id": "architecture-visualizer", "level": 4, "title": "Architecture Visualizer", "access": "write",
+    "id": "architecture-visualizer",
+    "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 4, "title": "Architecture Visualizer", "access": "write",
     "responsibility": "Map real components and trace feature flows into evidence-backed diagrams and explanations.",
     "trigger": "Architecture, request flow, onboarding or stale-diagram analysis is requested.",
     "excludes": "Treating lexical imports as proven runtime calls, imagined services and full-repo documentation by default.",
