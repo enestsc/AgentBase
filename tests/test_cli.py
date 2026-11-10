@@ -101,6 +101,23 @@ class CliTests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertFalse((self.root / ".agentbase").exists())
 
+    def test_memory_maintenance_cli(self):
+        self.run_cli("init")
+        (self.root / "app.py").write_text("value = 1\n", encoding="utf-8")
+        code, record, _ = self.run_json("memory", "note", "issue", "--text", "Old", "--evidence", "app.py:1")
+        self.assertEqual(code, 0)
+        code, listing, _ = self.run_json("memory", "list")
+        self.assertEqual(listing["notes"][0]["id"], record["id"])
+        code, preview, _ = self.run_json("memory", "prune", "--id", record["id"], "--reason", "resolved", "--dry-run")
+        self.assertEqual(code, 0)
+        self.assertFalse((self.root / preview["archive"]).exists())
+        code, result, _ = self.run_json("memory", "supersede", "--id", record["id"], "--reason", "changed",
+                                        "--text", "New", "--evidence", "app.py:1")
+        self.assertEqual(code, 0)
+        code, result, _ = self.run_json("memory", "prune", "--id", result["replacement"]["id"], "--reason", "resolved")
+        self.assertEqual(code, 0)
+        self.assertTrue((self.root / result["archive"]).exists())
+
     def test_doctor_reports_issue_with_exit_1_when_managed_file_is_corrupted(self):
         self.run_cli("init")
         # Yönetilen tam dosya elle bozulunca doctor bunu sorun sayıp 1 ile çıkmalı.

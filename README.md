@@ -44,6 +44,9 @@ agentbase context ...              bounded file retrieval with size estimates
 agentbase explain [--write]        evidence-based structural map (no model calls)
 agentbase tasks ...                validate / schedule / transition a task DAG
 agentbase memory ...               evidence-backed notes, sync, handoff
+agentbase memory list              show tracked note IDs and edit conflicts
+agentbase memory prune --id ID --reason "resolved" --dry-run
+agentbase memory supersede --id ID --reason "changed" --text "replacement" --evidence src/app.py:1 --dry-run
 agentbase local ...                opt-in loopback Ollama proposals (never mutates files)
 ```
 
@@ -64,6 +67,10 @@ agentbase uninstall --dry-run              # preview a clean removal
 ```
 
 `tasks.example.json` is validated by the test suite, so it always matches the schema.
+Memory maintenance archives explicitly selected intact notes and their evidence before
+removing/replacing active entries. Omit `--dry-run` after reviewing the preview.
+Manual notes and legacy notes without IDs are preserved; archives are outside the active
+memory budget and remain on disk. The evidence index upgrades to v2 on a new note or maintenance write.
 At the end of every task the host agent reports which role/agent did what (or why none was used).
 
 ## Roles and skills

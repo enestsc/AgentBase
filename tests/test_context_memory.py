@@ -2,13 +2,14 @@ import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 from agentbase.config import DEFAULT, load_config
 from agentbase.context import retrieve
 from agentbase.explain import project_report
-from agentbase.fs import AgentBaseError, json_text
+from agentbase.fs import AgentBaseError, atomic_write, json_text
 from agentbase.install import install
-from agentbase.memory import handoff, note, sync_memory
+from agentbase.memory import INDEX, handoff, index, list_notes, maintain, note, sync_memory
 
 
 class ContextMemoryTests(unittest.TestCase):
@@ -73,6 +74,105 @@ class ContextMemoryTests(unittest.TestCase):
         self.assertEqual(result["drift"][0]["file"], "app.py")
         self.assertFalse(result["decisions_rewritten"])
         self.assertEqual(before, (self.root / ".agentbase/memory/decision.md").read_bytes())
+
+    def snapshot(self):
+        return {p.relative_to(self.root).as_posix(): p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+
+    def test_prune_preview_preserves_every_file_then_archives_selected_only(self):
+        first = note(self.root, "decision", "Old claim", "app.py:1")
+        second = note(self.root, "decision", "Other claim", "service.py:1")
+        path = self.root / ".agentbase/memory/decision.md"
+        original = path.read_bytes()
+        path.write_bytes(b"Manual prefix\r\n" + original + b"Manual suffix\r\n")
+        before = self.snapshot()
+        preview = maintain(self.root, [first["id"]], "outdated", dry_run=True)
+        self.assertEqual(before, self.snapshot())
+        self.assertEqual(preview["selected"][0]["id"], first["id"])
+        result = maintain(self.root, [first["id"]], "outdated")
+        body = path.read_bytes()
+        self.assertTrue(body.startswith(b"Manual prefix\r\n"))
+        self.assertTrue(body.endswith(b"Manual suffix\r\n"))
+        self.assertNotIn(b"Old claim", body)
+        self.assertIn(b"Other claim", body)
+        saved = index(self.root)
+        self.assertEqual([n["id"] for n in saved["managed_notes"]], [second["id"]])
+        self.assertEqual([e["file"] for e in saved["entries"]], ["service.py"])
+        self.assertIn("Old claim", (self.root / result["archive"]).read_text(encoding="utf-8"))
+
+    def test_shared_evidence_survives_until_last_note_is_pruned(self):
+        a = note(self.root, "issue", "First", "app.py:1")
+        b = note(self.root, "issue", "Second", "app.py:1")
+        maintain(self.root, [a["id"]], "resolved")
+        self.assertEqual(len(index(self.root)["entries"]), 1)
+        maintain(self.root, [b["id"]], "resolved")
+        self.assertEqual(index(self.root)["entries"], [])
+
+    def test_supersede_replaces_evidence_and_preserves_original_in_archive(self):
+        old = note(self.root, "decision", "Previous", "app.py:1")
+        before = self.snapshot()
+        maintain(self.root, [old["id"]], "changed", text="Current", evidence="service.py:1", dry_run=True)
+        self.assertEqual(before, self.snapshot())
+        result = maintain(self.root, [old["id"]], "changed", text="Current", evidence="service.py:1")
+        self.assertNotEqual(result["replacement"]["id"], old["id"])
+        self.assertEqual(index(self.root)["entries"][0]["file"], "service.py")
+        self.assertEqual(len(index(self.root)["managed_notes"]), 1)
+        self.assertIn("Previous", (self.root / result["archive"]).read_text(encoding="utf-8"))
+
+    def test_invalid_replacement_or_edited_note_changes_nothing(self):
+        old = note(self.root, "decision", "Previous", "app.py:1")
+        before = self.snapshot()
+        with self.assertRaises(AgentBaseError):
+            maintain(self.root, [old["id"]], "changed", text="Current", evidence="missing.py:1")
+        self.assertEqual(before, self.snapshot())
+        path = self.root / ".agentbase/memory/decision.md"
+        path.write_text(path.read_text().replace("Previous", "User edited"), encoding="utf-8")
+        self.assertFalse(list_notes(self.root)["notes"][0]["intact"])
+        before = self.snapshot()
+        with self.assertRaisesRegex(AgentBaseError, "Preserving edited"):
+            maintain(self.root, [old["id"]], "changed")
+        self.assertEqual(before, self.snapshot())
+
+    def test_legacy_index_and_manual_references_are_preserved(self):
+        record = note(self.root, "issue", "Tracked", "app.py:1")
+        data = index(self.root)
+        legacy = {"schema_version": 1, "entries": data["entries"]}
+        (self.root / INDEX).write_text(json_text(legacy), encoding="utf-8")
+        self.assertEqual(list_notes(self.root)["notes"], [])
+        fresh = note(self.root, "issue", "Fresh", "service.py:1")
+        path = self.root / ".agentbase/memory/issue.md"
+        path.write_bytes(path.read_bytes() + b"Manual reference service.py:1\r\n")
+        maintain(self.root, [fresh["id"]], "changed")
+        self.assertEqual(len(index(self.root)["entries"]), 2)
+        self.assertIn(record["id"], path.read_text())
+
+    def test_unknown_duplicate_ids_and_empty_reason_are_rejected(self):
+        old = note(self.root, "issue", "Tracked", "app.py:1")
+        before = self.snapshot()
+        for ids, reason in ((["../escape"], "x"), ([old["id"], old["id"]], "x"), ([old["id"]], " ")):
+            with self.subTest(ids=ids), self.assertRaises(AgentBaseError):
+                maintain(self.root, ids, reason)
+        self.assertEqual(before, self.snapshot())
+
+    def test_archive_write_failure_rolls_back_note_and_index(self):
+        old = note(self.root, "issue", "Tracked", "app.py:1")
+        before = self.snapshot()
+
+        def fail_archive(path, data):
+            if path.parent.name == "archive":
+                raise OSError("archive write failure")
+            atomic_write(path, data)
+
+        with patch("agentbase.fs.atomic_write", side_effect=fail_archive), self.assertRaises(OSError):
+            maintain(self.root, [old["id"]], "changed")
+        self.assertEqual(before, self.snapshot())
+
+    def test_supersede_can_recover_full_budget_without_losing_old_note(self):
+        old = note(self.root, "issue", "x" * 1800, "app.py:1")
+        config = load_config(self.root)
+        config["context_overrides"] = {"memory_max_chars": 1000}
+        (self.root / ".agentbase/config.json").write_text(json_text(config), encoding="utf-8")
+        maintain(self.root, [old["id"]], "shorter", text="Short", evidence="app.py:1")
+        self.assertIn("Short", (self.root / ".agentbase/memory/issue.md").read_text())
 
     def test_memory_rejects_nonexistent_line_or_secret_evidence(self):
         for evidence in ("app.py:100", "app.py:0", "missing.py:1", ".env:1", "app.py"):

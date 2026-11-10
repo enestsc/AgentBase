@@ -44,6 +44,9 @@ agentbase context ...              bütçeli dosya getirme (tahmini boyut)
 agentbase explain [--write]        kanıta dayalı yapı haritası (model çağrısı yok)
 agentbase tasks ...                görev DAG'ını doğrula / planla / durum geçişi
 agentbase memory ...               kanıtlı notlar, senkronizasyon, devir teslim
+agentbase memory list              kimlikleri ve düzenleme çakışmalarını gösterir
+agentbase memory prune --id ID --reason "çözüldü" --dry-run
+agentbase memory supersede --id ID --reason "değişti" --text "yeni not" --evidence src/app.py:1 --dry-run
 agentbase local ...                isteğe bağlı yerel Ollama önerileri (dosya değiştirmez)
 ```
 
@@ -65,6 +68,11 @@ agentbase uninstall --dry-run              # temiz kaldırma önizlemesi
 
 `tasks.example.json` test paketinde doğrulanır; şemayla her zaman uyumludur. Ana ajan her görev
 sonunda hangi rolün/ajanın ne yaptığını (veya neden kullanılmadığını) bildirir.
+
+Bellek bakımı yalnızca açıkça seçilen, değiştirilmemiş kimlikli notları işler; eski metni
+ve kanıtını arşivler. Önizlemeyi inceledikten sonra `--dry-run` kaldırılır. Elle yazılmış
+ve kimliksiz eski notlar korunur. Arşivler aktif bellek bütçesine girmez, diskte kalır.
+Kanıt indeksi yeni not veya bakım yazımında v2'ye yükselir.
 
 ## Kim neyi zorlar?
 

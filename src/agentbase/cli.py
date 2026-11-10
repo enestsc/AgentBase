@@ -63,6 +63,15 @@ def parser() -> argparse.ArgumentParser:
     ms = mc.add_parser("sync")
     ms.add_argument("--deep", action="store_true")
     mc.add_parser("handoff")
+    mc.add_parser("list", help="List tracked note IDs; manual and legacy notes are preserved")
+    for name in ("prune", "supersede"):
+        sub = mc.add_parser(name)
+        sub.add_argument("--id", required=True, action="append" if name == "prune" else "store")
+        sub.add_argument("--reason", required=True)
+        sub.add_argument("--dry-run", action="store_true")
+        if name == "supersede":
+            sub.add_argument("--text", required=True)
+            sub.add_argument("--evidence", required=True)
     loc = commands.add_parser("local", help="Explicit opt-in loopback Ollama proposal; no file mutations")
     loc.add_argument("action", choices=("summarize", "classify"))
     loc.add_argument("--input", required=True)
@@ -160,6 +169,13 @@ def run(args: argparse.Namespace) -> dict | str:
             return {"written": ".agentbase/reports/project.md"}
         return project_report(root, load_config(root))[0]
     if args.command == "memory":
+        if args.memory_command == "list":
+            return memory.list_notes(root)
+        if args.memory_command in {"prune", "supersede"}:
+            replace = args.memory_command == "supersede"
+            return memory.maintain(root, [args.id] if replace else args.id, args.reason,
+                                   text=args.text if replace else None,
+                                   evidence=args.evidence if replace else None, dry_run=args.dry_run)
         if args.memory_command == "sync":
             return memory.sync_memory(root, deep=args.deep)
         if args.memory_command == "note":

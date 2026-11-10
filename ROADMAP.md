@@ -34,7 +34,7 @@ kod gözlemleri ise depodan doğrulandı.
 | # | İş | Öncelik | Dayanak (kodda doğrulanan) |
 |---|---|---|---|
 | 8 | Rol başına model/efor ayarı | ✅ Tamamlandı | Resmî şemalar ve modeller kontrol edildi; docs/provider-models.md; gerçek sağlayıcı oturumu doğrulanmadı |
-| 9 | Bellek bakımı: `memory prune/supersede` komutları | Yüksek | `memory.py` bütçe dolunca "elle temizle" diyor, temizleme komutu yok |
+| 9 | Bellek bakımı: `memory prune/supersede` komutları | ✅ Tamamlandı | Kimlikli seçim, gerekçe, dry-run, arşiv ve kanıt indeksi birlikte yazılır; elle yazılmış/kimliksiz eski notlar korunur |
 | 10 | Rol/skill prompt kalitesi denetimi (eski kalıp, çelişki, belirsiz tetikleyici) | Orta | `roles.json` ve 7 skill hiç denetlenmedi |
 | 11 | Skill kataloğunu genişlet: tekrarlanan işler için (release, changelog, PR özeti) | Orta | Mevcut 7 skill yalnızca planlama/bellek/doğrulama |
 | 12 | Görev devrinde rol çıktısı şablonu (handoff alanlarını zorunlu doğrula) | Orta | `skills/agentbase-plan-tasks` yalnızca metinle istiyor, araç doğrulamıyor |

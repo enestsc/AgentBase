@@ -12,6 +12,7 @@
 - `local`: `http://127.0.0.1:0` artık sessizce 11434'e düşmüyor, reddediliyor; HTTP hata yanıtı kapatılıyor (ResourceWarning).
 
 ### Added
+- `memory list/prune/supersede`: açık kimlik seçimi, gerekçe, dry-run, geri alınabilir arşiv ve tutarlı v2 kanıt indeksi; kullanıcı/kimliksiz eski notlar korunur.
 - Rol başına doğrulanmış Codex model/efor ve Claude Code model/effort alanları; resmî kaynak notları.
 - `cli`, `explain`, `local`, `uninstall` ve örnek plan için testler (43 → 76 test).
 - `agentbase uninstall [--dry-run] [--purge]`: yalnızca manifestteki yönetilen öğeleri geri alır; kullanıcının `AGENTS.md`/`CLAUDE.md` içeriği birebir korunur, yerel düzenlenmiş yönetilen dosya varsa durur.
