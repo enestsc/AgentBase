@@ -43,6 +43,7 @@ agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bounded file retrieval with size estimates
 agentbase explain [--write]        evidence-based structural map (no model calls)
 agentbase tasks ...                validate / schedule / transition a task DAG
+agentbase tasks validate-handoff --file handoff.json   validate worker result fields and write scope
 agentbase memory ...               evidence-backed notes, sync, handoff
 agentbase memory list              show tracked note IDs and edit conflicts
 agentbase memory prune --id ID --reason "resolved" --dry-run
@@ -60,13 +61,19 @@ agentbase tasks import --file examples/tasks.example.json
 agentbase tasks ready                      # which tasks may start now (launches nothing)
 agentbase tasks transition api-design ready
 agentbase tasks transition api-design running
-agentbase tasks transition api-design review --evidence "contract reviewed"
+agentbase tasks validate-handoff --file handoff.json  # prepare with actual observations; see examples/handoff.example.json
+agentbase tasks transition api-design review --handoff-file handoff.json
 agentbase tasks transition api-design completed --evidence "docs/health-contract.md accepted"
 agentbase memory handoff                   # compact, evidence-backed handoff
 agentbase uninstall --dry-run              # preview a clean removal
 ```
 
 `tasks.example.json` is validated by the test suite, so it always matches the schema.
+Prepare `handoff.json` from the [handoff example](examples/handoff.example.json) using
+real observations before review/completion. [Required fields and compatibility](docs/handoffs.md):
+validation checks the task ID, fields, write scope and budget; it does not execute checks.
+Review requires a handoff; completion requires a passed observation, no unresolved
+failures and verification evidence. Rework/retry invalidates the previous handoff.
 Memory maintenance archives explicitly selected intact notes and their evidence before
 removing/replacing active entries. Omit `--dry-run` after reviewing the preview.
 Manual notes and legacy notes without IDs are preserved; archives are outside the active

@@ -49,11 +49,14 @@ def parser() -> argparse.ArgumentParser:
         sub.add_argument("--file", required=name == "import", type=Path)
     for name in ("show", "ready", "sync"):
         tc.add_parser(name)
+    hv = tc.add_parser("validate-handoff", help="Validate a worker handoff against its current task scope")
+    hv.add_argument("--file", required=True, type=Path)
     trans = tc.add_parser("transition")
     trans.add_argument("id")
     trans.add_argument("status", choices=list(tasks.TRANSITIONS))
     trans.add_argument("--evidence", action="append")
     trans.add_argument("--reason", default="")
+    trans.add_argument("--handoff-file", type=Path)
     mem = commands.add_parser("memory", help="Evidence-backed notes, state synchronization and handoff")
     mc = mem.add_subparsers(dest="memory_command", required=True)
     note = mc.add_parser("note")
@@ -90,7 +93,10 @@ def doctor(root: Path) -> dict:
     except AgentBaseError as exc:
         issues.append(str(exc))
     try:
-        tasks.load_plan(root)
+        plan = tasks.load_plan(root)
+        legacy = [t["id"] for t in plan["tasks"] if t["status"] == "completed" and "handoff" not in t]
+        if legacy:
+            warnings.append("Legacy completed tasks lack validated handoffs: " + ", ".join(legacy))
     except AgentBaseError as exc:
         issues.append(str(exc))
     for name, record in manifest["files"].items():
@@ -147,16 +153,25 @@ def run(args: argparse.Namespace) -> dict | str:
             batch_write(root, {".agentbase/config.json": json_text(config)})
         return config
     if args.command == "tasks":
+        if args.task_command == "validate-handoff":
+            value = read_json(args.file)
+            target = next((t for t in tasks.load_plan(root)["tasks"] if t["id"] == value.get("task_id")), None)
+            if target is None:
+                raise AgentBaseError("Unknown handoff task_id.")
+            tasks.validate_handoff(value, target, load_config(root))
+            return {"valid": True, "task_id": target["id"], "checks_executed": False}
         if args.task_command == "validate":
             config = load_config(root) if confined(root, ".agentbase/config.json").exists() else DEFAULT
             plan = tasks.validate_plan(read_json(args.file), config) if args.file else tasks.load_plan(root)
-            return {"valid": True, "tasks": len(plan["tasks"])}
+            return {"valid": True, "tasks": len(plan["tasks"]), "legacy_completed_without_handoff":
+                    [t["id"] for t in plan["tasks"] if t["status"] == "completed" and "handoff" not in t]}
         if args.task_command == "import":
             return tasks.import_plan(root, read_json(args.file))
         if args.task_command == "sync":
             return tasks.sync(root)
         if args.task_command == "transition":
-            return tasks.transition(root, args.id, args.status, evidence=args.evidence, reason=args.reason)
+            return tasks.transition(root, args.id, args.status, evidence=args.evidence, reason=args.reason,
+                                    handoff=read_json(args.handoff_file) if args.handoff_file else None)
         plan = tasks.load_plan(root)
         return {"ready": tasks.schedule(plan, load_config(root)), "launches_workers": False} if args.task_command == "ready" else plan
     if args.command == "context":

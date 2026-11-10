@@ -6,7 +6,7 @@ from pathlib import Path
 from agentbase.config import DEFAULT
 from agentbase.fs import AgentBaseError
 from agentbase.install import install
-from agentbase.tasks import conflicts, import_plan, load_plan, schedule, sync, transition, validate_plan
+from agentbase.tasks import conflicts, import_plan, load_plan, schedule, sync, transition, validate_handoff, validate_plan
 
 
 def task(name="contract", deps=None, path="src/api.py", access="read", role="architect"):
@@ -21,6 +21,14 @@ def plan(*items):
     return {"schema_version": 1, "tasks": list(items)}
 
 
+def worker_handoff(task_id="contract"):
+    return {"schema_version": 1, "task_id": task_id, "result": "Contract proposal prepared",
+            "changed_files": [], "decisions": ["Preserve the existing boundary"],
+            "tests": [{"command": "Inspect the contract proposal", "status": "passed",
+                       "outcome": "Required inputs, outputs and errors are described"}],
+            "failures": [], "risks": [], "artifacts": ["Contract proposal in task output"]}
+
+
 class TaskTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -30,7 +38,7 @@ class TaskTests(unittest.TestCase):
 
     def complete(self, name):
         transition(self.root, name, "running")
-        transition(self.root, name, "review")
+        transition(self.root, name, "review", handoff=worker_handoff(name))
         transition(self.root, name, "completed", evidence=["Contract inspected: criteria met"])
 
     def test_real_dependency_lifecycle(self):
@@ -50,7 +58,7 @@ class TaskTests(unittest.TestCase):
         transition(self.root, "contract", "running")
         with self.assertRaisesRegex(AgentBaseError, "Invalid transition"):
             transition(self.root, "contract", "completed", evidence=["checked"])
-        transition(self.root, "contract", "review")
+        transition(self.root, "contract", "review", handoff=worker_handoff())
         with self.assertRaisesRegex(AgentBaseError, "evidence"):
             transition(self.root, "contract", "completed")
         self.assertEqual(load_plan(self.root)["tasks"][0]["status"], "review")
@@ -105,7 +113,7 @@ class TaskTests(unittest.TestCase):
         import_plan(self.root, plan(task("a"), task("b")))
         sync(self.root)
         transition(self.root, "a", "running")
-        transition(self.root, "a", "review")
+        transition(self.root, "a", "review", handoff=worker_handoff("a"))
         self.assertEqual(schedule(load_plan(self.root), DEFAULT), [])
         with self.assertRaisesRegex(AgentBaseError, "concurrency"):
             transition(self.root, "b", "running")
@@ -137,6 +145,97 @@ class TaskTests(unittest.TestCase):
         for value in cases:
             with self.assertRaises(AgentBaseError):
                 validate_plan(plan(value))
+
+    def test_review_requires_handoff_and_keeps_running_claim_on_error(self):
+        import_plan(self.root, plan(task()))
+        sync(self.root)
+        transition(self.root, "contract", "running")
+        before = (self.root / ".agentbase/tasks.json").read_bytes()
+        for value in (None, {"task_id": "contract"}, worker_handoff("other")):
+            with self.subTest(value=value), self.assertRaises(AgentBaseError):
+                transition(self.root, "contract", "review", handoff=value)
+            self.assertEqual((self.root / ".agentbase/tasks.json").read_bytes(), before)
+
+    def test_every_handoff_field_is_required_and_extra_fields_rejected(self):
+        original = worker_handoff()
+        for field in original:
+            value = deepcopy(original)
+            del value[field]
+            with self.subTest(field=field), self.assertRaises(AgentBaseError):
+                validate_handoff(value, task())
+        with self.assertRaises(AgentBaseError):
+            validate_handoff(original | {"extra": "unknown"}, task())
+
+    def test_handoff_rejects_wrong_types_and_incomplete_observations(self):
+        original = worker_handoff()
+        changes = [("schema_version", True), ("result", " "), ("decisions", "text"), ("risks", [1]),
+                   ("tests", []), ("tests", [{"command": "check", "status": "passed", "outcome": ""}]),
+                   ("tests", [{"command": "check", "status": "unknown", "outcome": "x"}])]
+        for field, value in changes:
+            with self.subTest(field=field, value=value), self.assertRaises(AgentBaseError):
+                validate_handoff(original | {field: value}, task())
+
+    def test_changed_files_must_be_unique_and_inside_owned_write_scope(self):
+        writer = task(role="backend-engineer", path="src/api", access="write")
+        value = worker_handoff() | {"changed_files": ["src/api/health.py"]}
+        validate_handoff(value, writer)
+        for files in (["src/apis/health.py"], ["../escape"], ["src/api/a.py", "SRC/api/a.py"]):
+            with self.subTest(files=files), self.assertRaises(AgentBaseError):
+                validate_handoff(value | {"changed_files": files}, writer)
+        with self.assertRaisesRegex(AgentBaseError, "write scope"):
+            validate_handoff(value, task())
+
+    def test_failed_or_unexecuted_handoff_cannot_complete(self):
+        import_plan(self.root, plan(task()))
+        sync(self.root)
+        transition(self.root, "contract", "running")
+        value = worker_handoff()
+        value["tests"][0]["status"] = "not-run"
+        value["tests"][0]["outcome"] = "Environment unavailable"
+        transition(self.root, "contract", "review", handoff=value)
+        before = (self.root / ".agentbase/tasks.json").read_bytes()
+        for status, failures in (("not-run", []), ("failed", []), ("passed", ["Unresolved failure"])):
+            value["tests"][0]["status"] = status
+            value["failures"] = failures
+            with self.subTest(status=status, failures=failures), self.assertRaisesRegex(AgentBaseError, "Completion handoff"):
+                transition(self.root, "contract", "completed", evidence=["Claim"], handoff=value)
+            self.assertEqual((self.root / ".agentbase/tasks.json").read_bytes(), before)
+        result = transition(self.root, "contract", "completed", evidence=["Contract checked"], handoff=worker_handoff())
+        self.assertEqual(result["handoff"]["task_id"], "contract")
+
+    def test_rework_and_retry_invalidate_old_handoff_and_evidence(self):
+        import_plan(self.root, plan(task()))
+        sync(self.root)
+        transition(self.root, "contract", "running")
+        transition(self.root, "contract", "review", handoff=worker_handoff(), evidence=["Old check"])
+        item = transition(self.root, "contract", "running")
+        self.assertNotIn("handoff", item)
+        self.assertEqual(item["verification"], [])
+        with self.assertRaisesRegex(AgentBaseError, "handoff"):
+            transition(self.root, "contract", "review")
+        transition(self.root, "contract", "review", handoff=worker_handoff())
+        transition(self.root, "contract", "blocked", reason="Contract changed")
+        item = transition(self.root, "contract", "pending")
+        self.assertNotIn("handoff", item)
+        self.assertEqual(item["verification"], [])
+
+    def test_handoff_budget_and_stored_payload_are_validated(self):
+        config = deepcopy(DEFAULT)
+        config["context_overrides"] = {"max_handoff_chars": 100}
+        with self.assertRaisesRegex(AgentBaseError, "budget"):
+            validate_handoff(worker_handoff(), task(), config)
+        value = task()
+        value.update(status="review", handoff=worker_handoff("wrong"))
+        with self.assertRaisesRegex(AgentBaseError, "task_id"):
+            validate_plan(plan(value))
+        value.update(status="pending", handoff=worker_handoff())
+        with self.assertRaisesRegex(AgentBaseError, "review/completed"):
+            validate_plan(plan(value))
+
+    def test_legacy_completed_plan_remains_readable(self):
+        value = task()
+        value.update(status="completed", verification=["Legacy observation"])
+        self.assertEqual(validate_plan(plan(value))["tasks"][0]["status"], "completed")
 
 
 if __name__ == "__main__":

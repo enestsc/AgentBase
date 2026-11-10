@@ -43,6 +43,7 @@ agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bütçeli dosya getirme (tahmini boyut)
 agentbase explain [--write]        kanıta dayalı yapı haritası (model çağrısı yok)
 agentbase tasks ...                görev DAG'ını doğrula / planla / durum geçişi
+agentbase tasks validate-handoff --file handoff.json   devir alanlarını ve yazma kapsamını doğrula
 agentbase memory ...               kanıtlı notlar, senkronizasyon, devir teslim
 agentbase memory list              kimlikleri ve düzenleme çakışmalarını gösterir
 agentbase memory prune --id ID --reason "çözüldü" --dry-run
@@ -60,7 +61,8 @@ agentbase tasks import --file examples/tasks.example.json
 agentbase tasks ready                      # şimdi başlayabilecek görevler (işçi başlatmaz)
 agentbase tasks transition api-design ready
 agentbase tasks transition api-design running
-agentbase tasks transition api-design review --evidence "sözleşme gözden geçirildi"
+agentbase tasks validate-handoff --file handoff.json  # gerçek gözlemlerle hazırla; examples/handoff.example.json
+agentbase tasks transition api-design review --handoff-file handoff.json
 agentbase tasks transition api-design completed --evidence "docs/health-contract.md kabul edildi"
 agentbase memory handoff                   # kısa, kanıtlı devir teslim
 agentbase uninstall --dry-run              # temiz kaldırma önizlemesi
@@ -73,6 +75,12 @@ Bellek bakımı yalnızca açıkça seçilen, değiştirilmemiş kimlikli notlar
 ve kanıtını arşivler. Önizlemeyi inceledikten sonra `--dry-run` kaldırılır. Elle yazılmış
 ve kimliksiz eski notlar korunur. Arşivler aktif bellek bütçesine girmez, diskte kalır.
 Kanıt indeksi yeni not veya bakım yazımında v2'ye yükselir.
+
+`handoff.json`, [örnekten](examples/handoff.example.json) gerçek gözlemlerle hazırlanır.
+[Devir şeması](docs/handoffs.md): review için devir; tamamlanma için başarılı gözlem,
+çözülmemiş hata olmaması ve verification kanıtı gerekir. Araç kimlik/alan/kapsam/bütçeyi
+doğrular, kontrolleri çalıştırmaz. Yeniden çalışma eski devri geçersiz kılar;
+devirsiz eski completed görevler okunur ama uyarıyla gösterilir.
 
 ## Kim neyi zorlar?
 

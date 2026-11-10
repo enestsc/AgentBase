@@ -19,6 +19,14 @@ observed results, failures, risks and downstream artifacts. Record real evidence
 before completion. A completed sibling never completes another task. If blocked,
 record a reason; escalate scope conflicts, missing contracts, failed checks and
 actions requiring authorization to the Orchestrator.
+Worker output is schema-v1 JSON with task_id, result, changed_files, decisions,
+tests, failures, risks and artifacts. Each test has command, status (passed,
+failed or not-run), and outcome (observation or reason). Include empty arrays
+explicitly. The Orchestrator runs `agentbase tasks validate-handoff --file FILE`,
+then supplies `--handoff-file FILE` when transitioning to review. Completion
+requires a handoff with an observed passed check, no unresolved failures, and
+verification evidence. Validation checks structure/scope, never executes or proves
+the reported checks. Rework/retry discards the previous handoff.
 
 Load only relevant code and skills. Use targeted searches and symbol reads;
 avoid unchanged rereads and full conversation forwarding. Read config for the

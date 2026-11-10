@@ -82,10 +82,12 @@ class CliTests(unittest.TestCase):
     def test_project_commands_require_init_without_creating_state(self):
         for argv in (("explain",), ("explain", "--write"), ("context", "README.md"),
                      ("memory", "handoff"), ("memory", "sync"),
+                     ("memory", "list"), ("memory", "prune", "--id", "x", "--reason", "x", "--dry-run"),
+                     ("memory", "supersede", "--id", "x", "--reason", "x", "--text", "x", "--evidence", "x:1"),
                      ("memory", "note", "issue", "--text", "x", "--evidence", "x:1"),
                      ("tasks", "show"), ("tasks", "ready"), ("tasks", "sync"),
                      ("tasks", "validate"), ("tasks", "import", "--file", "missing.json"),
-                     ("tasks", "transition", "x", "ready")):
+                     ("tasks", "transition", "x", "ready"), ("tasks", "validate-handoff", "--file", "missing.json")):
             with self.subTest(argv=argv):
                 code, out, err = self.run_cli(*argv)
                 self.assertEqual(code, 2)
@@ -117,6 +119,54 @@ class CliTests(unittest.TestCase):
         code, result, _ = self.run_json("memory", "prune", "--id", result["replacement"]["id"], "--reason", "resolved")
         self.assertEqual(code, 0)
         self.assertTrue((self.root / result["archive"]).exists())
+
+    def test_task_handoff_validation_and_completion_cli(self):
+        self.run_cli("init")
+        examples = Path(__file__).resolve().parents[1] / "examples"
+        code, _, _ = self.run_json("tasks", "import", "--file", str(examples / "tasks.example.json"))
+        self.assertEqual(code, 0)
+        self.run_cli("tasks", "sync")
+        self.run_cli("tasks", "transition", "api-design", "running")
+        code, _, err = self.run_cli("tasks", "transition", "api-design", "review")
+        self.assertEqual(code, 2)
+        self.assertIn("--handoff-file", json.loads(err)["error"])
+        value = json.loads((examples / "handoff.example.json").read_text(encoding="utf-8"))
+        path = self.root / "handoff.json"
+        path.write_text(json.dumps(value), encoding="utf-8")
+        code, data, _ = self.run_json("tasks", "validate-handoff", "--file", str(path))
+        self.assertEqual(code, 0)
+        self.assertFalse(data["checks_executed"])
+        code, _, _ = self.run_cli("tasks", "transition", "api-design", "review", "--handoff-file", str(path))
+        self.assertEqual(code, 0)
+        code, _, _ = self.run_cli("tasks", "transition", "api-design", "completed", "--evidence", "claim")
+        self.assertEqual(code, 2)
+        value["tests"][0].update(status="passed", outcome="Fixture: acceptance compared against proposal")
+        path.write_text(json.dumps(value), encoding="utf-8")
+        code, data, _ = self.run_json("tasks", "transition", "api-design", "completed", "--evidence", "Fixture observation",
+                                     "--handoff-file", str(path))
+        self.assertEqual(code, 0)
+        self.assertEqual(data["handoff"]["task_id"], "api-design")
+        value["task_id"] = "unknown"
+        path.write_text(json.dumps(value), encoding="utf-8")
+        code, _, err = self.run_cli("tasks", "validate-handoff", "--file", str(path))
+        self.assertEqual(code, 2)
+        self.assertIn("Unknown handoff task_id", json.loads(err)["error"])
+
+    def test_legacy_completion_is_reported_without_fabricating_handoff(self):
+        self.run_cli("init")
+        examples = Path(__file__).resolve().parents[1] / "examples"
+        value = json.loads((examples / "tasks.example.json").read_text(encoding="utf-8"))
+        value["tasks"][0].update(status="completed", verification=["Legacy observation"])
+        path = self.root / ".agentbase/tasks.json"
+        path.write_text(json.dumps(value), encoding="utf-8")
+        before = path.read_bytes()
+        code, data, _ = self.run_json("tasks", "validate")
+        self.assertEqual(code, 0)
+        self.assertEqual(data["legacy_completed_without_handoff"], ["api-design"])
+        code, data, _ = self.run_json("doctor")
+        self.assertEqual(code, 0)
+        self.assertTrue(any("Legacy completed tasks" in warning for warning in data["warnings"]))
+        self.assertEqual(path.read_bytes(), before)
 
     def test_doctor_reports_issue_with_exit_1_when_managed_file_is_corrupted(self):
         self.run_cli("init")

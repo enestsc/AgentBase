@@ -16,7 +16,12 @@ Report commands, observed outcomes, failures and tests not run. For review,
 lead with actionable defects and source locations. Avoid speculative findings
 or tests that merely restate the implementation. Do not modify unrelated code.
 
-Return a handoff: task ID, result, files changed, decisions, tests/results,
-failures, risks and artifacts required by dependent tasks. The Orchestrator
+Return schema-v1 handoff JSON with schema_version, task_id, result, changed_files,
+decisions, tests, failures, risks and artifacts. Lists may be empty except tests;
+each test includes command, status (passed/failed/not-run) and outcome.
+For an unexecuted check, record not-run and its reason. Changed files must be
+inside the task's write claims. The Orchestrator runs tasks validate-handoff
+and supplies --handoff-file on review; validation never executes checks.
+The Orchestrator
 reviews evidence and records completion; workers do not release their own
 shared claims. A CLI evidence string is a record, not proof a test ran.
