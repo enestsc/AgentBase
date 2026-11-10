@@ -25,6 +25,25 @@ Yerel doğrulama: `ruff check` temiz, 76 test geçti (1 atlandı: Windows'ta sym
 | 6 | `docs/` altında baştan sona kullanım rehberi (TR/EN) | 💤 Düşük öncelik | README yalnızca komutları anlatıyor |
 | 7 | Gerçek bir projede Codex/Claude Code ile uçtan uca deneme | ⏳ Doğrulanmadı | Araç mantığı test edildi; ajanların gerçekten rol seçimi yapması denenmedi |
 
+## Yeni öneriler (2026-11-10, video notları + kod incelemesi)
+
+Kaynak: "Bana 27 Dakika Verin, Size Claude'u Profesyonelce Kullanmayı Öğreteyim" videosu. Not: video içeriği
+(transkript) araçla okunamadı; aşağıdaki video bağlantıları kullanıcının yapıştırdığı özetten alındı,
+kod gözlemleri ise depodan doğrulandı.
+
+| # | İş | Öncelik | Dayanak (kodda doğrulanan) |
+|---|---|---|---|
+| 8 | Rol başına model/efor ayarı: okuyucu roller ucuz+düşük efor, mimar/güvenlik yüksek efor | Yüksek | `adapters.py:26` tüm Claude ajanlarında `model: inherit`; Codex TOML'unda model/efor alanı yok |
+| 9 | Bellek bakımı: `memory prune/supersede` komutları | Yüksek | `memory.py` bütçe dolunca "elle temizle" diyor, temizleme komutu yok |
+| 10 | Rol/skill prompt kalitesi denetimi (eski kalıp, çelişki, belirsiz tetikleyici) | Orta | `roles.json` ve 7 skill hiç denetlenmedi |
+| 11 | Skill kataloğunu genişlet: tekrarlanan işler için (release, changelog, PR özeti) | Orta | Mevcut 7 skill yalnızca planlama/bellek/doğrulama |
+| 12 | Görev devrinde rol çıktısı şablonu (handoff alanlarını zorunlu doğrula) | Orta | `skills/agentbase-plan-tasks` yalnızca metinle istiyor, araç doğrulamıyor |
+| — | Cowork / masaüstü otomasyonu | Kapsam dışı | AgentBase'in çekirdeğiyle ilgisiz |
+
+Model/efor önerisi (geliştirme oturumları için): ana geliştirme Opus 5.5 + `high`; dosya yazma/geri alma gibi
+güvenlik kritik tasarımlarda `xhigh`; test yazma ve rutin düzenlemelerde Sonnet 5.5 + `medium`; salt okuma
+keşif alt ajanlarında Haiku 5.5 + `low`. Fable 5.2 yalnızca en zor tek seferlik işler için (fiyatı Opus 5.5'in 2 katı).
+
 ## Bilinen sınırlar
 
 - Alt ajan yürütme, izin ve sandbox sağlayıcı çalışma zamanındadır; AgentBase bunları denetlemez.
