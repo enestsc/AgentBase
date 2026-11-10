@@ -77,7 +77,7 @@
     "excludes": "Publishing, production mutation or credential changes without authorization.",
     "inputs": "Target platform, deployment constraints, secret references and assigned config scope.",
     "outputs": "Validated reproducible configuration with operational and rollback notes.",
-    "skills": ["agentbase-verify-change"]
+    "skills": ["agentbase-verify-change", "agentbase-prepare-release"]
   },
   {
     "id": "integration-engineer",
@@ -147,7 +147,7 @@
     "excludes": "Inventing architecture, rewriting all docs on every task and changing application behavior.",
     "inputs": "Audience, implemented behavior, evidence and assigned documentation files.",
     "outputs": "Concise accurate documentation, runnable examples and explicit limitations.",
-    "skills": ["agentbase-explain-project", "agentbase-sync-memory"]
+    "skills": ["agentbase-explain-project", "agentbase-sync-memory", "agentbase-changelog", "agentbase-pr-summary"]
   },
   {
     "id": "architecture-visualizer",

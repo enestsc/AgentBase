@@ -36,7 +36,7 @@ kod gözlemleri ise depodan doğrulandı.
 | 8 | Rol başına model/efor ayarı | ✅ Tamamlandı | Resmî şemalar ve modeller kontrol edildi; docs/provider-models.md; gerçek sağlayıcı oturumu doğrulanmadı |
 | 9 | Bellek bakımı: `memory prune/supersede` komutları | ✅ Tamamlandı | Kimlikli seçim, gerekçe, dry-run, arşiv ve kanıt indeksi birlikte yazılır; elle yazılmış/kimliksiz eski notlar korunur |
 | 10 | Rol/skill prompt kalitesi denetimi | ✅ Tamamlandı | docs/prompt-audit.md raporu ve önerilen diff önce kaydedildi; 16 rol/7 skill incelendi, düzeltmeler uygulandı; model oturumu denenmedi |
-| 11 | Skill kataloğunu genişlet: tekrarlanan işler için (release, changelog, PR özeti) | Orta | Mevcut 7 skill yalnızca planlama/bellek/doğrulama |
+| 11 | Skill kataloğunu genişlet: release, changelog, PR özeti | ✅ Tamamlandı | Ön plan paylaşıldı; 3 skill ve rol yönlendirmeleri eklendi (toplam 10); yükseltme testi |
 | 12 | Görev devrinde rol çıktısı şablonu (handoff alanlarını zorunlu doğrula) | Orta | `skills/agentbase-plan-tasks` yalnızca metinle istiyor, araç doğrulamıyor |
 | — | Cowork / masaüstü otomasyonu | Kapsam dışı | AgentBase'in çekirdeğiyle ilgisiz |
 

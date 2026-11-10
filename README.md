@@ -83,7 +83,10 @@ read-only checks and skill-trigger corrections; model-session behavior remains u
 
 Sixteen roles in four tiers (planning, implementation, quality, knowledge) are defined once in
 `src/agentbase/assets/roles.json` and rendered per provider. Skills: explain-project,
-architecture-map, plan-tasks, verify-change, sync-memory, session-handoff, local-assist.
+architecture-map, plan-tasks, verify-change, sync-memory, session-handoff, local-assist,
+prepare-release, changelog and pr-summary (10 total). Delivery skills prepare reviewable
+artifacts; remote publication requires authorization. Existing projects gain new skills via
+`agentbase update --dry-run`, then `agentbase update` after review.
 
 ## Who enforces what
 

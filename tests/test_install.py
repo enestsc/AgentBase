@@ -47,6 +47,25 @@ class InstallTests(unittest.TestCase):
         self.assertTrue(path.read_text().startswith("User prefix\n"))
         self.assertTrue(path.read_text().endswith("User suffix\n"))
 
+    def test_upgrade_discovers_new_delivery_skills_and_preserves_user_work(self):
+        new = {"agentbase-prepare-release", "agentbase-changelog", "agentbase-pr-summary"}
+        old = {name: body for name, body in skills().items() if name not in new}
+        with patch("agentbase.adapters.skills", return_value=old):
+            install(self.root)
+        memory = self.root / ".agentbase/memory/overview.md"
+        memory.write_bytes(b"User knowledge\r\n")
+        preview = install(self.root, update=True, dry_run=True)
+        for name in new:
+            for prefix in (".agents", ".claude"):
+                path = f"{prefix}/skills/{name}/SKILL.md"
+                self.assertIn(path, [change["path"] for change in preview["changes"]])
+                self.assertFalse((self.root / path).exists())
+        install(self.root, update=True)
+        for name in new:
+            self.assertEqual((self.root / f".agents/skills/{name}/SKILL.md").read_text(encoding="utf-8"), skills()[name])
+        self.assertEqual(memory.read_bytes(), b"User knowledge\r\n")
+        self.assertEqual(install(self.root, update=True)["changes"], [])
+
     def test_full_file_conflict_prevents_all_updates(self):
         install(self.root)
         path = self.root / ".agentbase/policy.md"

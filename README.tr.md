@@ -81,6 +81,11 @@ low, mimar/güvenlik Sol/Opus + high. [Alanlar ve kaynaklar](docs/provider-model
 [Prompt denetimi ve önerilen diff](docs/prompt-audit.md), sahiplik/salt okuma
 sınırlarını ve yedi skill'in tetikleyici düzeltmelerini açıklar; gerçek model oturumu denenmedi.
 
+Katalog artık 10 skill içerir. Yeni `agentbase-prepare-release`, `agentbase-changelog`
+ve `agentbase-pr-summary`, sürüm hazırlığı, değişiklik notu ve PR taslağı üretir;
+uzak yayınlama için yetki gerekir. Mevcut projede önce `agentbase update --dry-run`,
+incelemeden sonra `agentbase update` çalıştırılır.
+
 1. **AgentBase aracı (deterministik):** DAG doğrulama, geçiş kuralları, dosya sahiplik çakışmaları,
    yol kısıtlama, hash takipli dosyalar, atomik yazma, bağlam bütçeleri.
 2. **Ana ajan politikası (yalnızca talimat):** ne zaman devredileceği, kapsam disiplini, otomatik
