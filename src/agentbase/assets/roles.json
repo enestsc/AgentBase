@@ -96,14 +96,14 @@
     "trigger": "A substantive behavior change needs independent validation or missing coverage.",
     "excludes": "Unrelated implementation changes, claiming unexecuted checks passed, and redundant test mirrors.",
     "inputs": "Acceptance criteria, changed behavior, relevant tests and permitted test environment.",
-    "outputs": "Test changes or executed checks with commands, observed results and remaining gaps.",
+    "outputs": "Scoped test changes when assigned; separately report executed commands, observed results and checks not run.",
     "skills": ["agentbase-verify-change"]
   },
   {
     "id": "code-reviewer",
     "model_recommendations": {"codex": {"model": "gpt-6-luna", "model_reasoning_effort": "low"}, "claude": {"model": "haiku", "effort": "low"}}, "level": 3, "title": "Code Reviewer", "access": "read",
     "responsibility": "Review correctness, maintainability, regressions and meaningful missing tests.",
-    "trigger": "A substantive change is ready for review or review is requested.",
+    "trigger": "Review is requested, or a substantive change needs independent correctness verification.",
     "excludes": "Editing implementation, unrelated cleanup and speculative style findings.",
     "inputs": "Diff, intended behavior, acceptance criteria and existing verification evidence.",
     "outputs": "Prioritized actionable findings with locations, impact and reproducible evidence, or no findings.",
@@ -132,11 +132,11 @@
   {
     "id": "context-keeper",
     "model_recommendations": {"codex": {"model": "gpt-6.1-sol", "model_reasoning_effort": "medium"}, "claude": {"model": "sonnet", "effort": "medium"}}, "level": 4, "title": "Context Keeper", "access": "write",
-    "responsibility": "Maintain concise evidence-backed state, decisions, open issues and session handoffs.",
+    "responsibility": "Propose concise evidence-backed state, decisions, open issues and session handoffs for the Orchestrator to record.",
     "trigger": "A milestone, significant decision, session handoff or explicit synchronization request.",
     "excludes": "Chat transcript archives, guessed architecture, automatic deep scans and overwriting approved decisions.",
     "inputs": "Verified handoffs, current task state and file/symbol evidence.",
-    "outputs": "Bounded memory updates and a concise resume guide with unresolved work.",
+    "outputs": "Proposed bounded memory updates with evidence and a concise resume guide with unresolved work; no direct shared-memory writes.",
     "skills": ["agentbase-sync-memory", "agentbase-session-handoff"]
   },
   {

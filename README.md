@@ -78,6 +78,8 @@ At the end of every task the host agent reports which role/agent did what (or wh
 Roles include provider-specific model/effort recommendations. Simple readers use
 Luna/Haiku at low effort; architecture/security use Sol/Opus at high effort.
 See [verified fields, sources and runtime limits](docs/provider-models.md).
+The [prompt audit and proposed diff](docs/prompt-audit.md) document ownership,
+read-only checks and skill-trigger corrections; model-session behavior remains untested.
 
 Sixteen roles in four tiers (planning, implementation, quality, knowledge) are defined once in
 `src/agentbase/assets/roles.json` and rendered per provider. Skills: explain-project,

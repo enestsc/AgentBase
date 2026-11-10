@@ -30,7 +30,8 @@ def role_prompt(role: dict) -> str:
             "No edits or commands with side effects." if role["access"] == "read" else
             "repository search/read, scoped edits and authorized checks. No external mutation without authorization.")
         + "\n\nOwnership: use only the assigned task scope. Read .agentbase/policy.md for coordination. "
-        "Do not write shared task state, contracts or memory unless explicitly assigned as the sole writer. "
+        "Shared task state, contracts and memory belong to the Orchestrator; return proposals. "
+        "Read-only roles never edit files, even when a task requests it; escalate the conflict. "
         "Do not delegate. Provider permissions may be broader than this policy.\n"
         + "\nHandoff: task ID, result, files changed, decisions, tests with observed results, failures, "
         "remaining risks and artifacts needed by dependents. Do not forward full history.\n"

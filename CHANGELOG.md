@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Docs
+- 16 rol ve 7 skill için önce rapor/önerilen diff, ardından sahiplik, tetikleyici ve kanıt dili düzeltmeleri.
 - `ROADMAP.md`: tamamlanan aşamalar ve kalan işlerin güncel durumu.
 
 ### Fixed

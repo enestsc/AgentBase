@@ -78,6 +78,8 @@ Kanıt indeksi yeni not veya bakım yazımında v2'ye yükselir.
 
 Roller sağlayıcıya göre model/efor önerisi içerir: basit okuyucular Luna/Haiku +
 low, mimar/güvenlik Sol/Opus + high. [Alanlar ve kaynaklar](docs/provider-models.md).
+[Prompt denetimi ve önerilen diff](docs/prompt-audit.md), sahiplik/salt okuma
+sınırlarını ve yedi skill'in tetikleyici düzeltmelerini açıklar; gerçek model oturumu denenmedi.
 
 1. **AgentBase aracı (deterministik):** DAG doğrulama, geçiş kuralları, dosya sahiplik çakışmaları,
    yol kısıtlama, hash takipli dosyalar, atomik yazma, bağlam bütçeleri.

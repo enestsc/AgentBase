@@ -1,6 +1,6 @@
 ---
 name: agentbase-sync-memory
-description: Synchronize concise engineering memory after meaningful changes or check evidence for stale assumptions.
+description: Use for an explicit memory sync, a significant decision or milestone worth retaining; use session-handoff for a resume guide, not automatic deep scans.
 ---
 
 The Orchestrator is the single writer of shared project memory. Workers return
@@ -19,7 +19,11 @@ changed/missing evidence and relevant source before reconciling semantic claims
 or architecture diagrams. The deterministic scan does not rewrite decisions.
 Explicitly review any proposed replacement of an authoritative decision.
 
-Keep entries concise and remove superseded material thoughtfully when limits
-are reached. Do not evade limits by creating endless note files. Never store
+For maintenance, run `agentbase memory list`, select intact note IDs, then use
+`agentbase memory prune --id ID --reason "..." --dry-run` or
+`agentbase memory supersede --id ID --reason "..." --text "..." --evidence src/module.py:12 --dry-run`.
+Review selected entries and the archive path before omitting `--dry-run`.
+Manual, legacy and edited notes are preserved; do not delete them to bypass limits.
+Keep entries concise. Do not evade limits by creating endless note files. Never store
 secrets or full chats. Model-generated proposals need human/Orchestrator review
 and source validation before becoming memory.

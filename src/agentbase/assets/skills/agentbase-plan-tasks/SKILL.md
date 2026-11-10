@@ -1,6 +1,6 @@
 ---
 name: agentbase-plan-tasks
-description: Plan substantial coordinated changes as a validated dependency DAG with explicit file ownership.
+description: Use when dependent components or justified specialists require a coordinated plan; skip task DAGs for small direct changes.
 ---
 
 For small work, implement directly. Otherwise read `.agentbase/policy.md` and
