@@ -79,6 +79,28 @@ class CliTests(unittest.TestCase):
         self.assertEqual(out, "")
         self.assertTrue(json.loads(err)["error"])
 
+    def test_project_commands_require_init_without_creating_state(self):
+        for argv in (("explain",), ("explain", "--write"), ("context", "README.md"),
+                     ("memory", "handoff"), ("memory", "sync"),
+                     ("memory", "note", "issue", "--text", "x", "--evidence", "x:1"),
+                     ("tasks", "show"), ("tasks", "ready"), ("tasks", "sync"),
+                     ("tasks", "validate"), ("tasks", "import", "--file", "missing.json"),
+                     ("tasks", "transition", "x", "ready")):
+            with self.subTest(argv=argv):
+                code, out, err = self.run_cli(*argv)
+                self.assertEqual(code, 2)
+                self.assertEqual(out, "")
+                self.assertIn("first run `agentbase init`", json.loads(err)["error"])
+                self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_external_plan_validation_needs_no_init(self):
+        plan = self.root / "plan.json"
+        plan.write_text('{"schema_version": 1, "tasks": []}', encoding="utf-8")
+        code, result, _ = self.run_json("tasks", "validate", "--file", str(plan))
+        self.assertEqual(code, 0)
+        self.assertTrue(result["valid"])
+        self.assertFalse((self.root / ".agentbase").exists())
+
     def test_doctor_reports_issue_with_exit_1_when_managed_file_is_corrupted(self):
         self.run_cli("init")
         # Yönetilen tam dosya elle bozulunca doctor bunu sorun sayıp 1 ile çıkmalı.

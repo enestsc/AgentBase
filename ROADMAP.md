@@ -19,7 +19,7 @@ Yerel doğrulama: `ruff check` temiz, 76 test geçti (1 atlandı: Windows'ta sym
 |---|---|---|---|
 | 1 | Dalı GitHub'a gönderip PR aç | ⏳ Bekliyor | CI Linux/macOS'ta henüz hiç çalışmadı |
 | 2 | PyPI trusted publisher tanımla, `v*` etiketi at | ⏳ Bekliyor | Hesap işlemi kullanıcıda; tanımlanana kadar publish işi çalışmaz |
-| 3 | Başlatılmamış projede `explain`/`context`/`memory`/`tasks` için anlaşılır hata ("önce `agentbase init`") | ⏳ Yapılacak | Şu an ham OS hatası dönüyor; test de eklenecek |
+| 3 | Başlatılmamış projede anlaşılır hata | ✅ Tamamlandı | Dört komut grubunda init yönlendirmesi ve yan etkisizlik testi; harici plan doğrulaması bağımsız |
 | 4 | Symlink testini Linux/macOS CI'da doğrula | ⏳ CI'a bağlı | Windows'ta atlanıyor |
 | 5 | Yavaş testleri bul ve hızlandır | 💤 Düşük öncelik | Süit 8–27 sn arasında değişiyor |
 | 6 | `docs/` altında baştan sona kullanım rehberi (TR/EN) | 💤 Düşük öncelik | README yalnızca komutları anlatıyor |

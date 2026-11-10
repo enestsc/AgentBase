@@ -105,6 +105,11 @@ def doctor(root: Path) -> dict:
 
 def run(args: argparse.Namespace) -> dict | str:
     root = args.project.resolve()
+    # Harici plan doğrulaması bağımsızdır; proje işlemleri önce kurulum ister.
+    standalone_plan = args.command == "tasks" and args.task_command == "validate" and args.file
+    if args.command in {"explain", "context", "memory", "tasks"} and not standalone_plan:
+        if not confined(root, ".agentbase/config.json").is_file():
+            raise AgentBaseError("Project is not initialized; first run `agentbase init` (önce `agentbase init` çalıştır).")
     if args.command == "init":
         providers = ["codex", "claude"] if args.provider == "both" else [args.provider]
         return install(root, providers=providers, dry_run=args.dry_run)

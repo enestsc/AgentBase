@@ -33,6 +33,9 @@ preserved byte for byte; AgentBase only owns a marked block. After upgrading the
 
 ## Commands
 
+Project `explain`, `context`, `memory` and `tasks` commands require `agentbase init`
+first and report an actionable error otherwise. `tasks validate --file` works independently.
+
 ```text
 agentbase roles | skills            list canonical roles / skills
 agentbase uninstall [--dry-run] [--purge]   remove managed files/blocks; --purge also deletes .agentbase state

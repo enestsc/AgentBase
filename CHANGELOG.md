@@ -8,6 +8,7 @@
 - `ROADMAP.md`: tamamlanan aşamalar ve kalan işlerin güncel durumu.
 
 ### Fixed
+- Başlatılmamış projede explain/context/memory/tasks artık önce `agentbase init` ister; yan etki oluşturmaz.
 - `local`: `http://127.0.0.1:0` artık sessizce 11434'e düşmüyor, reddediliyor; HTTP hata yanıtı kapatılıyor (ResourceWarning).
 
 ### Added

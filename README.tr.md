@@ -33,6 +33,9 @@ bayt bayt korunur; AgentBase yalnızca işaretli bir bloğa sahiptir. CLI'yi yü
 
 ## Komutlar
 
+Proje üzerinde `explain`, `context`, `memory` ve `tasks` için önce `agentbase init`
+gerekir; eksikse anlaşılır hata verilir. `tasks validate --file` bağımsız çalışır.
+
 ```text
 agentbase roles | skills            rolleri / skill'leri listeler
 agentbase uninstall [--dry-run] [--purge]   yönetilen dosya/blokları kaldırır; --purge .agentbase durumunu da siler
