@@ -26,6 +26,7 @@ dependencies = []
 [project.optional-dependencies]
 # Yalnızca geliştirme içindir; çalışma zamanı bağımlılığı sıfır kalmalı.
 dev = ["ruff>=0.6", "pytest>=8"]
+yaml = ["PyYAML>=6.0.2,<7"]
 
 [tool.ruff]
 line-length = 140
@@ -47,4 +48,4 @@ agentbase = "agentbase.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-agentbase = ["assets/*.md", "assets/*.json", "assets/skills/*/*.md"]
+agentbase = ["assets/*.md", "assets/*.json", "assets/*.cjs", "assets/skills/*/*.md"]

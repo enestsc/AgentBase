@@ -95,13 +95,15 @@ def project_lock(root: Path):
         path.unlink(missing_ok=True)
 
 
-def batch_write(root: Path, changes: dict[str, str | None]) -> None:
+def batch_write(root: Path, changes: dict[str, str | bytes | None]) -> None:
     """Caller holds project_lock. Preflight all paths; roll back ordinary I/O failures.
 
     Per-file replacement is atomic. A process/power failure across files is not a
     filesystem transaction; the installer manifest is written last to expose drift.
     """
     paths = {name: confined(root, name) for name in changes}
+    created_parents = {parent for path in paths.values() for parent in path.parents
+                       if parent != root.resolve() and parent.is_relative_to(root.resolve()) and not parent.exists()}
     previous = {}
     for name, path in paths.items():
         if path.exists() and not path.is_file():
@@ -114,11 +116,18 @@ def batch_write(root: Path, changes: dict[str, str | None]) -> None:
             if content is None:
                 paths[name].unlink(missing_ok=True)
             else:
-                atomic_write(paths[name], content.encode("utf-8"))
+                atomic_write(paths[name], content.encode("utf-8") if isinstance(content, str) else content)
     except OSError:
         for name in reversed(touched):
             if previous[name] is None:
                 paths[name].unlink(missing_ok=True)
             else:
                 atomic_write(paths[name], previous[name])
+        # Preserve preexisting empty directories, but leave retries unblocked by
+        # empty skill destinations created by this failed batch.
+        for directory in sorted(created_parents, key=lambda p: len(p.parts), reverse=True):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
         raise

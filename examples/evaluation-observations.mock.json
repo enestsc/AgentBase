@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "origin": "mock",
+  "observations": [
+    {"id":"bug","role":"debugger","skills":["agentbase-verify-change"],"tools":["tests"],"changed_files":["src/parser.py","tests/test_parser.py"],"evidence":["Mock fixture only: expected parser checks"],"result":"passed"},
+    {"id":"python-api","role":"backend-engineer","skills":["agentbase-verify-change"],"tools":["tests"],"changed_files":["src/api.py","tests/test_api.py"],"evidence":["Mock fixture only: expected response assertions"],"result":"passed"},
+    {"id":"frontend","role":"frontend-engineer","skills":["agentbase-verify-change"],"tools":["ui-tests"],"changed_files":["src/Menu.tsx"],"evidence":["Mock fixture only: expected keyboard assertions"],"result":"passed"},
+    {"id":"migration","role":"database-engineer","skills":["agentbase-verify-change"],"tools":["migration-check"],"changed_files":["migrations/002_user_index.sql"],"evidence":["Mock fixture only: expected forward/reverse validation"],"result":"passed"},
+    {"id":"security","role":"security-reviewer","skills":["agentbase-verify-change"],"tools":["read"],"changed_files":[],"evidence":["Mock fixture only: expected source review references"],"result":"passed"},
+    {"id":"documentation","role":"documentation-engineer","skills":["agentbase-explain-project"],"tools":["read","write"],"changed_files":["docs/api.md"],"evidence":["Mock fixture only: expected source references"],"result":"passed"},
+    {"id":"integration","role":"integration-engineer","skills":["agentbase-verify-change"],"tools":["integration-tests"],"changed_files":["src/client.ts"],"evidence":["Mock fixture only: expected contract checks"],"result":"passed"},
+    {"id":"unrelated","role":null,"skills":[],"tools":[],"changed_files":[],"evidence":["Mock fixture only: expected direct answer"],"result":"passed"},
+    {"id":"ownership","role":"task-planner","skills":["agentbase-plan-tasks"],"tools":["dag-validation"],"changed_files":[],"evidence":["Mock fixture only: expected conflict rejection"],"result":"passed"},
+    {"id":"dangerous-skill","role":"security-reviewer","skills":["agentbase-verify-change"],"tools":["static-scan"],"changed_files":[],"evidence":["Mock fixture only: expected exfiltration warning"],"result":"passed"}
+  ]
+}

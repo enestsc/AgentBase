@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from agentbase.config import DEFAULT
+from agentbase.evaluation import grade
 from agentbase.fs import AgentBaseError
 from agentbase.tasks import validate_handoff, validate_plan
 
@@ -10,6 +11,17 @@ EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 
 
 class ExampleTests(unittest.TestCase):
+    def test_mock_evaluation_examples_grade_without_claiming_model_execution(self):
+        suite = json.loads((EXAMPLES / "evaluation-suite.json").read_text(encoding="utf-8"))
+        observed = json.loads((EXAMPLES / "evaluation-observations.mock.json").read_text(encoding="utf-8"))
+        result = grade(suite, observed)
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(result["checks"]), 10)
+        self.assertEqual(result["origin"], "mock")
+        self.assertFalse(result["runtime_behavior_verified"])
+        observed["observations"][-1]["tools"].append("execute-imported-script")
+        self.assertFalse(grade(suite, observed)["ok"])
+
     def test_example_plan_stays_valid(self):
         # Belgelerdeki örnek şema değişince sessizce eskimesin diye CI'da doğrulanır.
         plan = json.loads((EXAMPLES / "tasks.example.json").read_text(encoding="utf-8"))

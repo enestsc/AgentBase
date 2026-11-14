@@ -1,5 +1,44 @@
 # AgentBase
 
+[Yerel host test makbuzları](docs/guides/test-receipts.tr.md): açık argv/rıza,
+kaynak/görev hash bağları ve stale kontrolü; host çalıştırması sandbox değildir.
+
+Yeni yerel temeller: SHA'ya sabitlenmiş ve incelemeli GitHub skill kurulumu,
+isteğe bağlı kullanım verisi içe alımı, yedi hazır paket, mevcut DAG'a şartname
+derleme, çevrimdışı değerlendirme ve tekrar üretilebilir plugin paketleri.
+Çoklu skill restore, stdin kullanım yakalama, artımlı görev uzlaştırma ve hash
+tabanlı kod haritası eklendi. Açık izinli çevrimdışı Docker worker sınırlı öneriler
+döndürür; bulut sağlayıcılar arası yürütme henüz desteklenmez.
+Kimlik bilgisini worker'dan ayıran isteğe bağlı gateway sahte anahtarlı gerçek
+Docker öz testi içerir; native ücretli çalıştırma adaptör entegrasyonunu bekler.
+Dış ağı kapalı native smoke testleri, sentetik API yanıt çözümleme, Claude plugin
+keşfi ve tek vakalı native regex eval akışını doğrular. Sonuçlar açıkça mock'tur;
+gerçek model, kullanım veya kalite ölçümü sayılmaz.
+[Türkçe rehber](docs/guides/foundations.tr.md) · [English guide](docs/guides/foundations.md) ·
+[Güncel durum ve sınırlar](docs/development/STATUS.md).
+
+Bu checkout artık kendi yönetilen kurulumunu, görev DAG'ını ve doğrulanmış
+devirlerini geliştirmede kullanıyor. [Kendi projede kullanım ve devam rehberi](docs/guides/self-use.tr.md),
+gerçek host delegasyonu ile üretilmiş native tanımların keşfini ayrı açıklar.
+
+```bash
+agentbase init --provider both --pack python --pack security --dry-run
+agentbase skills add https://github.com/owner/repository --path skills/example
+agentbase usage configure --source codex-exec-v1
+agentbase usage --week --json
+agentbase spec reconcile health
+agentbase explain --write --feature authentication
+agentbase local models --consent
+agentbase eval capabilities --provider claude --consent
+```
+
+Skill ekleme/güncelleme önce plan üretir; uygulama tam `--plan-id` ve yüksek
+önemli bulgular için ayrı `--acknowledge` ister. Kullanım kaynak bazında açık
+onayla yerel tutulur; bilinmeyen metrikler null kalır. Betik çalıştırma, bağımlılık
+kurma, analitik yükleme, ücretli model testi veya yayınlama otomatik yapılmaz.
+GitHub işlemleri açık ağ erişimi kullanır; normal proje kurulumu çevrimdışıdır.
+[Güven modeli](docs/security/trust-model.md) · [Mimari](docs/architecture/overview.md).
+
 **OpenAI Codex** ve **Claude Code** için sağlayıcıya özgü (native) yapay zekâ geliştirme iş akışları.
 Tek kaynaklı roller, skill'ler ve politika; üretilen native adaptörler; deterministik koordinasyon
 için bağımlılıksız küçük bir Python CLI. İngilizce: [README.md](README.md).
@@ -44,6 +83,8 @@ agentbase context ...              bütçeli dosya getirme (tahmini boyut)
 agentbase explain [--write]        kanıta dayalı yapı haritası (model çağrısı yok)
 agentbase tasks ...                görev DAG'ını doğrula / planla / durum geçişi
 agentbase tasks validate-handoff --file handoff.json   devir alanlarını ve yazma kapsamını doğrula
+agentbase tasks test TASK_ID --source src --consent --argv MUTLAK_EXE ARGLAR   güvenilen host kontrolü; sandbox değil
+agentbase tasks receipt RECEIPT_ID   yerel kaynak/görev güncelliği; bağımsız kanıt değil
 agentbase memory ...               kanıtlı notlar, senkronizasyon, devir teslim
 agentbase memory list              kimlikleri ve düzenleme çakışmalarını gösterir
 agentbase memory prune --id ID --reason "çözüldü" --dry-run

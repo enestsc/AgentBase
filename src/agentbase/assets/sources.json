@@ -1,0 +1,6 @@
+[
+  {"id":"superpowers","repository":"https://github.com/obra/superpowers","description":"Development workflow and verification skills; select a SKILL.md directory explicitly.","kind":"skill-source","trust":"unreviewed-community","review":"Inspect selected immutable commit; listing is not approval."},
+  {"id":"anthropic-skills","repository":"https://github.com/anthropics/skills","description":"Anthropic-maintained skill examples with per-skill license terms.","kind":"skill-source","trust":"unreviewed-community","review":"Publisher identity does not replace selected-source inspection."},
+  {"id":"voltagent-catalog","repository":"https://github.com/VoltAgent/awesome-agent-skills","description":"Community discovery links; linked skills need separate review.","kind":"discovery-only","trust":"unreviewed-community","review":"Catalog license and listing do not approve linked skill content."},
+  {"id":"awesome-codex-cli","repository":"https://github.com/RoggeOhta/awesome-codex-cli","description":"Community Codex discovery links; not an installable skill catalog.","kind":"discovery-only","trust":"unreviewed-community","review":"Catalog license and listing do not approve linked skill content."}
+]

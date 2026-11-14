@@ -20,7 +20,10 @@ DEFAULT = {
     "context_overrides": {},
     "execution": {"mode": "sequential", "max_concurrency": 1},
     "local_model": {"enabled": False, "endpoint": "http://127.0.0.1:11434",
-                    "model": "", "timeout_seconds": 30, "max_input_chars": 8000},
+                    "model": "", "timeout_seconds": 30, "max_input_chars": 8000,
+                    "context_tokens": 4096, "max_output_tokens": 512,
+                    "max_model_bytes": 8_000_000_000, "max_loaded_bytes": 12_000_000_000,
+                    "structured": True},
 }
 
 
@@ -50,13 +53,22 @@ def validate_config(value: dict) -> dict:
     if execution["mode"] == "sequential" and count != 1:
         raise AgentBaseError("Sequential execution requires max_concurrency 1.")
     local = value["local_model"]
-    if not isinstance(local, dict) or set(local) != set(DEFAULT["local_model"]):
+    legacy = {"enabled", "endpoint", "model", "timeout_seconds", "max_input_chars"}
+    if not isinstance(local, dict) or not legacy <= set(local) or set(local) - set(DEFAULT["local_model"]):
         raise AgentBaseError("Invalid local_model configuration keys.")
+    value = deepcopy(value)
+    local = value["local_model"] = DEFAULT["local_model"] | local
     if type(local["enabled"]) is not bool or not all(isinstance(local[k], str) for k in ("endpoint", "model")):
         raise AgentBaseError("local_model needs boolean enabled and string endpoint/model.")
     for key, ceiling in (("timeout_seconds", 300), ("max_input_chars", 100_000)):
         if type(local[key]) is not int or not 1 <= local[key] <= ceiling:
             raise AgentBaseError(f"local_model.{key} must be in 1..{ceiling}.")
+    for key, ceiling in (("context_tokens", 1_000_000), ("max_output_tokens", 8192),
+                         ("max_model_bytes", 1_000_000_000_000), ("max_loaded_bytes", 1_000_000_000_000)):
+        if type(local[key]) is not int or not 1 <= local[key] <= ceiling:
+            raise AgentBaseError(f"local_model.{key} must be in 1..{ceiling}.")
+    if local["max_output_tokens"] >= local["context_tokens"] or type(local["structured"]) is not bool:
+        raise AgentBaseError("Local output budget must fit context and structured must be boolean.")
     return deepcopy(value)
 
 

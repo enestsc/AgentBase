@@ -1,6 +1,20 @@
 # Yol haritası ve ilerleme
 
-Son güncelleme: 2026-11-10 · Dal: `chore/p1-hygiene` · Sürüm: 0.1.0 (Alpha)
+Son güncelleme: 2026-11-14 · Dal: `chore/p1-hygiene` · Sürüm: 0.1.0 (Alpha)
+
+Yeni temel modüllerin güncel durumu ve gerçek test sonuçları:
+[STATUS](docs/development/STATUS.md), [devam planı](docs/development/ROADMAP.md),
+[oturum devri](docs/development/HANDOFF.md). Aşağıdaki tarihî ilerleme korunmuştur.
+Bu checkout'ta korunmuş gerçek AgentBase kurulumu, görev DAG'ı ve bağımsız yardımcı
+ajan devirleri artık kullanıldı. Yardımcının saptadığı gateway uzak alan geçişi
+açık izin listeleriyle kapatıldı. [Kendi projede kullanım](docs/guides/self-use.tr.md).
+Yerel host test makbuzları artık açık argv/rıza, seçilen kaynak/görev/executable
+hash bağları ve stale raporuyla mevcut DAG'a eklendi. Bunlar bağımsız veya
+kriptografik doğrulanmış kanıt değildir. [Rehber](docs/guides/test-receipts.tr.md).
+Güncel test ve paket sonuçları STATUS'tadır; eski tarihî sonuçlar aşağıda korunur.
+Son eklenenler: dış ağı kapalı native image sözleşme/sentetik API testleri,
+Claude kanonik plugin keşfi ve tek vakalı native regex eval. Gerçek sağlayıcı
+çağrısı, ücretli çalıştırma ve model kalite ölçümü yapılmadı.
 
 ## Tamamlananlar
 

@@ -6,7 +6,7 @@ import re
 from copy import deepcopy
 from pathlib import Path
 
-from . import __version__
+from . import __version__, packs
 from .adapters import instruction_bodies, render
 from .config import DEFAULT, load_config
 from .fs import AgentBaseError, batch_write, confined, digest, json_text, project_lock, read_json
@@ -14,6 +14,16 @@ from .fs import AgentBaseError, batch_write, confined, digest, json_text, projec
 START = "<!-- agentbase:begin -->"
 END = "<!-- agentbase:end -->"
 MANIFEST = ".agentbase/manifest.json"
+DISCOVERY = ".agentbase/discovery.json"
+
+
+def discovery_mode(root: Path) -> str:
+    if not confined(root, DISCOVERY).exists():
+        return "native"
+    value = read_json(confined(root, DISCOVERY))
+    if set(value) != {"schema_version", "mode"} or value["schema_version"] != 1 or value["mode"] not in ("native", "plugin"):
+        raise AgentBaseError("Invalid discovery mode state.")
+    return value["mode"]
 
 
 def text_at(root: Path, name: str) -> str | None:
@@ -59,7 +69,8 @@ def load_manifest(root: Path) -> dict:
     return value
 
 
-def prepare(root: Path, *, update: bool, providers: list[str] | None = None) -> dict[str, str | None]:
+def prepare(root: Path, *, update: bool, providers: list[str] | None = None,
+            pack_ids: list[str] | None = None, discovery: str | None = None) -> dict[str, str | None]:
     manifest_exists = confined(root, MANIFEST).exists()
     if update != manifest_exists:
         raise AgentBaseError("Already initialized; use update." if manifest_exists else "Not initialized; use init.")
@@ -67,7 +78,21 @@ def prepare(root: Path, *, update: bool, providers: list[str] | None = None) -> 
     config = load_config(root) if update else deepcopy(DEFAULT)
     if providers:
         config["providers"] = providers
-    generated = render(config["providers"])
+    previous_packs = packs.state(root) if update else None
+    selection = None
+    if pack_ids is not None or previous_packs:
+        selection = packs.resolve(pack_ids if pack_ids is not None else previous_packs["selected"], config["providers"],
+                                  legacy=(previous_packs["legacy_catalog"] if previous_packs else update), root=root)
+    generated = render(config["providers"], role_ids=selection["agents"] if selection else None,
+                       skill_ids=selection["skills"] if selection else None)
+    mode = discovery or (discovery_mode(root) if update else "native")
+    if mode not in ("native", "plugin"):
+        raise AgentBaseError("Discovery must be native or plugin.")
+    if mode == "plugin":
+        # Codex plugin custom-agent discovery is not assumed; its standalone
+        # agents remain. Claude plugin agents and shared plugin skills are not
+        # duplicated into the project-native discovery directories.
+        generated = {n: body for n, body in generated.items() if not n.startswith((".agents/skills/", ".claude/skills/", ".claude/agents/"))}
     blocks = instruction_bodies(config["providers"])
     desired = {name: ("file", body) for name, body in generated.items()}
     desired.update({name: ("block", f"{START}\n{body.rstrip()}\n{END}") for name, body in blocks.items()})
@@ -119,6 +144,16 @@ def prepare(root: Path, *, update: bool, providers: list[str] | None = None) -> 
             if confined(root, name).exists():
                 raise AgentBaseError(f"Existing project state would be overwritten: {name}")
             changes[name] = body
+    if selection and text_at(root, packs.STATE) != json_text(selection):
+        if not update and confined(root, packs.STATE).exists():
+            raise AgentBaseError("Existing pack state would be overwritten.")
+        changes[packs.STATE] = json_text(selection)
+    if discovery is not None or (update and confined(root, DISCOVERY).exists()):
+        body = json_text({"schema_version": 1, "mode": mode})
+        if not update and confined(root, DISCOVERY).exists():
+            raise AgentBaseError("Existing discovery state preserved.")
+        if text_at(root, DISCOVERY) != body:
+            changes[DISCOVERY] = body
     manifest_body = json_text({"schema_version": 1, "version": __version__, "files": records})
     if text_at(root, MANIFEST) != manifest_body:
         changes[MANIFEST] = manifest_body  # Must be last: crash drift remains detectable.
@@ -129,6 +164,10 @@ def prepare_uninstall(root: Path, *, purge: bool) -> dict[str, str | None]:
     """Yalnızca manifestteki yönetilen öğeleri geri alır; kullanıcı içeriğine dokunmaz."""
     if not confined(root, MANIFEST).exists():
         raise AgentBaseError("Not initialized; nothing to uninstall.")
+    if purge and confined(root, ".agentbase/skills.lock.json").exists():
+        from .registry import load
+        if load(root)["skills"]:
+            raise AgentBaseError("Remove installed third-party skills with `skills remove ID --apply` before purging their provenance lock.")
     old = load_manifest(root)["files"]
     changes: dict[str, str | None] = {}
     for name, record in old.items():
@@ -199,16 +238,17 @@ def uninstall(root: Path, *, purge: bool = False, dry_run: bool = False) -> dict
 
 
 def install(root: Path, *, update: bool = False, providers: list[str] | None = None,
-            dry_run: bool = False) -> dict:
+            dry_run: bool = False, pack_ids: list[str] | None = None, discovery: str | None = None) -> dict:
     root = root.resolve()
     if not root.is_dir():
         raise AgentBaseError("Project directory must already exist.")
     if dry_run:
-        changes = prepare(root, update=update, providers=providers)
+        changes = prepare(root, update=update, providers=providers, pack_ids=pack_ids, discovery=discovery)
     else:
         with project_lock(root):
-            changes = prepare(root, update=update, providers=providers)
+            changes = prepare(root, update=update, providers=providers, pack_ids=pack_ids, discovery=discovery)
             batch_write(root, changes)
     return {"dry_run": dry_run, "version": __version__,
+            "dependency_availability": packs.dependencies(root, pack_ids or (packs.state(root) or {}).get("selected", [])),
             "changes": [{"path": name, "action": "remove" if body is None else "write"}
                         for name, body in changes.items()]}

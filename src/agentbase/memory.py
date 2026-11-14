@@ -10,6 +10,7 @@ from .config import limits, load_config
 from .context import read_source
 from .explain import project_report, report_changes
 from .fs import AgentBaseError, batch_write, confined, digest, json_text, project_lock, read_json
+from .intelligence import index_changes
 from .tasks import load_plan
 
 CATEGORIES = ("overview", "decision", "milestone", "issue", "question", "relationship")
@@ -178,6 +179,8 @@ def sync_memory(root: Path, *, deep: bool = False) -> dict:
                                   "reason": error or "file hash changed; review semantic claim"})
             report, snapshot = project_report(root, config)
             changes.update(report_changes(root, report))
+            changes.update(index_changes(snapshot["structural"]))
+            snapshot = {k: v for k, v in snapshot.items() if k != "structural"}
             changes[".agentbase/reports/evidence.json"] = json_text(snapshot)
             changes[".agentbase/reports/drift.json"] = json_text({"schema_version": 1, "drift": drift})
         batch_write(root, changes)

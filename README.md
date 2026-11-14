@@ -6,6 +6,25 @@ dependency-free Python CLI for deterministic coordination. Turkish: [README.tr.m
 
 AgentBase is not an inference framework. It uses the agent runtimes you already have.
 
+New local foundations: reviewed, SHA-pinned GitHub skill imports; opt-in usage
+imports; seven curated packs; explicit specification-to-DAG compilation; offline
+evaluation and reproducible optional plugin packages. Multi-skill restore,
+explicit stdin usage capture, incremental task reconciliation and source-hashed
+code maps extend those foundations. A separate opt-in offline Docker worker
+returns bounded proposals; cloud cross-provider execution remains unavailable.
+The optional credential gateway now has a dummy-key Docker self-test; native paid
+launch stays disabled pending adapter integration.
+Network-disabled native CLI smoke checks now verify synthetic Responses/Messages
+decoding, Claude plugin discovery and its one-case native regex eval pipeline.
+Results stay explicitly mock; no real model, usage or quality claim is made.
+[English guide](docs/guides/foundations.md) · [Türkçe rehber](docs/guides/foundations.tr.md) ·
+[Implementation status and limitations](docs/development/STATUS.md).
+
+This checkout uses its managed installation, task DAG and validated handoffs for
+development. [Self-use and resuming work](docs/guides/self-use.md) distinguishes
+host delegation from native discovery; [test receipts](docs/guides/test-receipts.md)
+explain explicit host execution and its evidence limits.
+
 ## Install
 
 Requires Python 3.11+. No runtime dependencies.
@@ -15,6 +34,7 @@ pip install git+https://github.com/enestsc/AgentBase.git
 cd your-project
 agentbase init --provider both      # codex | claude | both
 agentbase doctor
+# Optional selective install instead: agentbase init --provider both --pack python --pack security
 ```
 
 `init --dry-run` previews every change. Existing `AGENTS.md` / `CLAUDE.md` content is
@@ -38,17 +58,34 @@ first and report an actionable error otherwise. `tasks validate --file` works in
 
 ```text
 agentbase roles | skills            list canonical roles / skills
+agentbase skills search|add|list|info|audit|update|rollback|remove|export|restore
+agentbase packs list|info|recommend|add|remove
+agentbase usage [--today|--week] [--provider codex|claude] [--by-agent|--by-skill] [--json]
+agentbase usage configure|import|capture|export|delete    explicit opt-in; no automatic collector
+agentbase spec init|validate|plan|tasks|reconcile|evidence   existing DAG and reported test trace
+agentbase eval list|validate|run|report          offline structure / supplied-observation grading
+agentbase eval capabilities --provider claude --consent  native help/version probes only
+agentbase eval native-smoke --provider claude --image TRUSTED_PIN --mode eval --consent  synthetic API, network disabled
+agentbase plugins build|validate               local artifacts; no publication
+agentbase plugins validate --output PATH --native --consent  supported native static validation
+agentbase init/update --discovery plugin        CLI state without duplicate plugin skills
 agentbase uninstall [--dry-run] [--purge]   remove managed files/blocks; --purge also deletes .agentbase state
 agentbase configure --mode sequential|safe-parallel
 agentbase context ...              bounded file retrieval with size estimates
-agentbase explain [--write]        evidence-based structural map (no model calls)
+agentbase explain [--write] [--feature TERM]   incremental structural map (no model calls)
 agentbase tasks ...                validate / schedule / transition a task DAG
 agentbase tasks validate-handoff --file handoff.json   validate worker result fields and write scope
+agentbase tasks test TASK_ID --source src --consent --argv ABSOLUTE_EXE ARGS   trusted host check; no sandbox
+agentbase tasks receipt RECEIPT_ID   local source/task freshness; not authenticated proof
+agentbase tasks sandbox ID --worker trusted-worker.json --context src/app.py --consent   offline Docker proposals
 agentbase memory ...               evidence-backed notes, sync, handoff
 agentbase memory list              show tracked note IDs and edit conflicts
 agentbase memory prune --id ID --reason "resolved" --dry-run
 agentbase memory supersede --id ID --reason "changed" --text "replacement" --evidence src/app.py:1 --dry-run
 agentbase local ...                opt-in loopback Ollama proposals (never mutates files)
+agentbase local models --consent   explicit installed-model discovery, no downloads
+agentbase gateway validate --file POLICY.json   bounded fixed-provider gateway policy
+agentbase gateway self-test --image TRUSTED_PIN --consent   dummy-key local Docker proof, no provider calls
 ```
 
 ## Example session
@@ -110,13 +147,22 @@ compatible readers; writers are serialized.
 
 ## Privacy and safety
 
-No network calls unless you run `agentbase local` with Ollama explicitly enabled (loopback
-only). No automatic commits or pushes. Token figures are labelled estimates.
+Network calls occur only for explicit GitHub skill operations or `agentbase local`
+with Ollama explicitly enabled (loopback only). Imported code is never executed.
+Skill add/update defaults to a plan; application requires its exact plan ID and
+specific high-severity acknowledgements. Local edits are preserved.
+Usage is opt-in and local, with unknown metrics kept null; context occupancy,
+provider-reported tokens, estimated API cost and actual billing are distinct.
+No automatic commits, pushes, analytics uploads or paid evaluations.
+[Trust model](docs/security/trust-model.md) · [Architecture](docs/architecture/overview.md).
 
 ## Development
 
 ```bash
 python -m unittest discover -s tests   # with PYTHONPATH=src
+python -m ruff check src tests scripts
+# Separate, explicit GitHub network smoke; no imported code execution:
+python scripts/live_registry_smoke.py --network
 ```
 
 MIT licensed.

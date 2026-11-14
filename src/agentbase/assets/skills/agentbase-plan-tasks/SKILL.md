@@ -27,6 +27,18 @@ Use native specialists if available, otherwise apply the appropriate canonical
 role in `.agentbase/roles/` sequentially. Do not use recursive delegation. Respect
 configured concurrency and actual host permission/runtime limits. This release
 allows parallel readers only, with writers serialized against all other work.
+Explicit specifications may use `spec tasks ID --import` for an empty store and
+`spec reconcile ID` for reviewed incremental updates. Apply only the exact plan ID.
+Started/evidenced requirements must become follow-up work, not rewritten criteria.
+`spec evidence ID` reports explicit criterion-to-handoff test mappings; these are
+host-reported observations, not independently verified execution.
+
+An explicitly trusted, pinned offline worker may use `tasks sandbox ID --worker
+POLICY.json --context PATH --consent` only after the task is running. It receives
+selected in-scope snapshots inside a verified local Linux Docker boundary and
+returns untrusted proposals. No host files or task states are changed by the
+worker. Cloud-provider execution remains unavailable. Never weaken that boundary
+or forward host secrets/provider home directories to obtain a fallback.
 
 Workers return schema-v1 JSON with `schema_version: 1`, `task_id`, `result`,
 `changed_files`, `decisions`, `tests`, `failures`, `risks` and `artifacts`.

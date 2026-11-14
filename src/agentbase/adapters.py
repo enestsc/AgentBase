@@ -5,9 +5,12 @@ import json
 from .catalog import asset, role_prompt, roles, skills
 
 
-def render(providers: list[str]) -> dict[str, str]:
+def render(providers: list[str], *, role_ids: list[str] | None = None,
+           skill_ids: list[str] | None = None) -> dict[str, str]:
     result = {".agentbase/policy.md": asset("policy.md")}
     for role in roles():
+        if role_ids is not None and role["id"] not in role_ids:
+            continue
         name = "agentbase-" + role["id"]
         body = role_prompt(role)
         result[f".agentbase/roles/{role['id']}.md"] = body
@@ -29,6 +32,8 @@ def render(providers: list[str]) -> dict[str, str]:
                 + f"---\n\n{body}"
             )
     for name, body in skills().items():
+        if skill_ids is not None and name not in skill_ids:
+            continue
         if "codex" in providers:
             result[f".agents/skills/{name}/SKILL.md"] = body
         if "claude" in providers:

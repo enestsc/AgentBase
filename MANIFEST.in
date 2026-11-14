@@ -1,0 +1,5 @@
+include README.tr.md AGENTS.md CLAUDE.md SECURITY.md CONTRIBUTING.md CHANGELOG.md ROADMAP.md THIRD_PARTY_NOTICES.md
+recursive-include docs *.md
+recursive-include examples *.json
+recursive-include scripts *.py
+recursive-include tests *.py *.json *.cjs

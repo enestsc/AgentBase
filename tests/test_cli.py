@@ -31,6 +31,14 @@ class CliTests(unittest.TestCase):
         self.assertTrue(data["dry_run"])
         self.assertEqual(list(self.root.iterdir()), [])
 
+    def test_missing_project_does_not_create_directories(self):
+        path = self.root / "missing"
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = main(["--project", str(path), "usage", "configure", "--source", "codex-exec-v1"])
+        self.assertEqual(code, 2)
+        self.assertFalse(path.exists())
+
     def test_init_then_doctor_is_ok(self):
         code, data, _ = self.run_json("init")
         self.assertEqual(code, 0)

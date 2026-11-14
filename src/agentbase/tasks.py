@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .catalog import roles
 from .config import DEFAULT, limits, load_config
-from .fs import AgentBaseError, batch_write, confined, json_text, project_lock, read_json, relative
+from .fs import AgentBaseError, batch_write, confined, digest, json_text, project_lock, read_json, relative
 
 PLAN = ".agentbase/tasks.json"
 ACTIVE = {"running", "review"}
@@ -23,6 +23,11 @@ TASK_FIELDS = {"id", "description", "role", "dependencies", "inputs", "outputs",
                "resources", "acceptance", "status", "verification", "blocking_reason"}
 HANDOFF_FIELDS = {"schema_version", "task_id", "result", "changed_files", "decisions",
                   "tests", "failures", "risks", "artifacts"}
+
+
+def definition(task: dict) -> str:
+    """Stable static contract, shared with specification reconciliation."""
+    return digest(json_text({k: v for k, v in task.items() if k not in {"status", "verification", "blocking_reason", "handoff"}}))
 
 
 def string_list(value: object, label: str, *, nonempty: bool = False) -> None:
